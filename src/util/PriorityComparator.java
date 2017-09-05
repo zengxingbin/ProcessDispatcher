@@ -2,7 +2,7 @@ package util;
 
 import java.util.Comparator;
 
-import application.ProcessPCB;
+import model.ProcessPCB;
 
 public class PriorityComparator implements Comparator<ProcessPCB> {
 
