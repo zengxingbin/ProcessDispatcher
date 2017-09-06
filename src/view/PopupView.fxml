@@ -5,7 +5,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.layout.AnchorPane?>
 
-<AnchorPane prefHeight="142.0" prefWidth="327.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="view.PopupController">
+<AnchorPane prefHeight="123.0" prefWidth="327.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="view.PopupController">
    <children>
       <GridPane layoutY="27.0" prefHeight="23.0" prefWidth="327.0" AnchorPane.bottomAnchor="123.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="27.0">
         <columnConstraints>
@@ -16,11 +16,11 @@
           <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
         </rowConstraints>
          <children>
-            <Label prefHeight="15.0" prefWidth="141.0" text="    请输入初始进程个数" />
+            <Label fx:id="inputTip" prefHeight="15.0" prefWidth="141.0" text="  请输入初始进程个数：" />
             <TextField fx:id="initProNum" prefHeight="23.0" prefWidth="210.0" promptText="（1~10个）" GridPane.columnIndex="1" />
          </children>
       </GridPane>
-      <Label fx:id="invalidInputTip" layoutX="145.0" layoutY="59.0" text="请输入1~10之间的数" textFill="#d30b0b" />
+      <Label fx:id="invalidInputTip" layoutX="145.0" layoutY="59.0" text="请输入1~10之间的数字！" textFill="#d30b0b" visible="false" />
       <Button layoutX="76.0" layoutY="82.0" mnemonicParsing="false" onAction="#confirm" text="确认" />
       <Button layoutX="192.0" layoutY="82.0" mnemonicParsing="false" onAction="#cancel" text="取消" />
    </children>
