@@ -1,10 +1,16 @@
 package view;
 
+import java.util.Random;
+
 import application.Dispatcher;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import model.ProcessPCB;
 
 public class PopupController {
     @FXML
@@ -28,7 +34,19 @@ public class PopupController {
             }
 
         });
+        //confirm the initial number of process once the the key enter was released
+        initProNum.setOnKeyReleased(new EventHandler<KeyEvent>() {
+            @Override
+            public void handle(KeyEvent event) {
+                if (event.getCode() == KeyCode.ENTER) {
+                    confirm();
+                }
+            }
+        });
     }
+    /**
+     * confirm to generate several process
+     */
     @FXML
     private void confirm() {
         int proNum;
@@ -43,7 +61,34 @@ public class PopupController {
             invalidInputTip.setVisible(true);
             return;
         }
+        //set the 
+        if(dispatcher.getStartTime() == -1) {
+            dispatcher.setStartTime(System.currentTimeMillis() / 1000);
+            dispatcher.setCurrentTime(dispatcher.getStartTime());
+        }
+        // random generate the priority and service time of process
+        Random rand = new Random();
+        for (int i = 0; i < proNum; i++) {
+            ProcessPCB process = new ProcessPCB();
+            // initialize process
+            process.setpName("process" + dispatcher.getProcessCounter());
+            process.setPid(dispatcher.getProcessCounter());
+            dispatcher.setProcessCounter(dispatcher.getProcessCounter()+1);
+            process.setPriority(rand.nextInt(20));
+            process.setStatus(0);
+            process.setArrivalTime((int) (dispatcher.getCurrentTime() - dispatcher.getStartTime()));
+            process.setFirstTime(true);
+            // record current time
+            dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
+            process.setServiceTime(rand.nextInt(10) + 1);
+            process.setRemainingTime(process.getServiceTime());
+            // join in the readyQueue
+            dispatcher.getReadyQueue().add(process);
+        }
         dispatcher.getPopupStage().close();
+        dispatcher.getMainController().getReadyQueue().requestFocus();
+        //dispatcher.getMainController().getReadyQueue().getSelectionModel().select(0);
+        
     }
     @FXML
     private void cancel() {
