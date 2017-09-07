@@ -10,10 +10,17 @@ import javafx.stage.Stage;
 import model.ProcessPCB;
 import view.MainController;
 import view.PopupController;
+import view.WarningController;
+import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
 import javafx.scene.image.Image;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
+
 public class Dispatcher extends Application {
+    private GridPane gridPane = new GridPane();
+    private static int timeCounter;
     private static long startTime;
     private static long currentTime;
     private static int processCounter = 0;// as the the process id
@@ -23,8 +30,10 @@ public class Dispatcher extends Application {
     private Stage mainStage;
     private Scene mainScene;
     private Stage popupStage;
+    private Stage warnStage;
     private PopupController popupController;
     private MainController mainController;
+    private WarningController warnController;
     // ready queue
     private ObservableList<ProcessPCB> readyQueue = FXCollections.observableArrayList();
     // wait queue
@@ -41,12 +50,15 @@ public class Dispatcher extends Application {
     private boolean isContention;
     // decide another thread if needing waiting
     private boolean needWait;
+    //a signal to clear all the list
+    private boolean clearSignal;
     // create a thread to perform scheduling
     // has the dispatch thread started
-    //private boolean hasStartDispatch;
-    //the dispatch thread
+    // private boolean hasStartDispatch;
+    // the dispatch thread
     private Thread dispathThread = new Thread(new DispatchRun());
-    //record the last completed dispathThread to decide whether create a new dispatch thread
+    // record the last completed dispathThread to decide whether create a new
+    // dispatch thread
     private Thread completedThread = null;
     // this thread is responsible for updating the readyQueue
     private Thread updateReadyQueue = new Thread(new Runnable() {
@@ -91,12 +103,12 @@ public class Dispatcher extends Application {
     private boolean addSignal3;
     private boolean sortSignal3;
     private boolean waitSignal3;
+
     class DispatchRun implements Runnable {
 
         @Override
         public void run() {
             System.out.println("start the dispatch thread!");
-
             switch (schedulingStrategy) {
             case 0:
                 rrDispatcher();
@@ -109,8 +121,8 @@ public class Dispatcher extends Application {
                 break;
             }
 
-            
         }
+
         public void rrDispatcher() {
             int timeSlicing = 0;
             if (!readyQueue.isEmpty()) {
@@ -138,22 +150,24 @@ public class Dispatcher extends Application {
             }
             while (true) {
 
-                /*synchronized (this) {
-                    while(needWait) {
-                        try {
-                            System.out.println("等待了");
-                            this.wait();
-                            System.out.println("从等待的地方开始，继续向下执行");
-                        } catch (InterruptedException e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
-                        }
-
-                    }
-
-                }*/
-                //dispatch thread suspend
-                while(needWait) {
+                /*
+                 * synchronized (this) { while(needWait) { try {
+                 * System.out.println("等待了"); this.wait();
+                 * System.out.println("从等待的地方开始，继续向下执行"); } catch
+                 * (InterruptedException e) { // TODO Auto-generated catch block
+                 * e.printStackTrace(); }
+                 * 
+                 * }
+                 * 
+                 * }
+                 */
+                //if the clearSignal is true,end the thread
+                if(clearSignal) {
+                    clearSignal = false;
+                    break;
+                }
+                // dispatch thread suspend
+                while (needWait) {
                     try {
                         Thread.currentThread().sleep(100);
                     } catch (InterruptedException e) {
@@ -217,7 +231,8 @@ public class Dispatcher extends Application {
                     // join in the readyQueue
                     readyQueue.add(process);
                     // addSignal = true;
-                    // wait for the current thread added to the reaydQueue when
+                    // wait for the current thread added to the reaydQueue
+                    // when
                     // time out
                     /*
                      * while(true) { try { Thread.currentThread().sleep(100); }
@@ -232,7 +247,8 @@ public class Dispatcher extends Application {
                         process = readyQueue.remove(0);
                         runningProcess.remove(0);
                         runningProcess.add(process);
-                        // removeSignal = true;//send the remove signal to the
+                        // removeSignal = true;//send the remove signal to
+                        // the
                         // updateReadyQueueThread
                         // wait for the next process to be run
                         /*
@@ -258,16 +274,18 @@ public class Dispatcher extends Application {
                         timeSlicing = 0;
                     }
                 }
+
             }
             // rmove the last completed process from runningProcess table
             runningProcess.remove(0);
             // reset the hasStartDispatch value when the dispatch thread finish
-            //hasStartDispatch = false;
-            //record this finish thread 
+            // hasStartDispatch = false;
+            // record this finish thread
             completedThread = dispathThread;
         }
-        
+
     }
+
     public Dispatcher() {
         // create popup Stage
         popupStage = new Stage();
@@ -292,6 +310,25 @@ public class Dispatcher extends Application {
         // gain the popup controller
         popupController = loader.getController();
         popupController.setDispatcher(this);
+        //create warn Stage
+        warnStage = new Stage();
+        warnStage.setTitle("警告");
+        warnStage.getIcons().add(new Image("/images/tip.png"));
+        //create fxml loader to load the fxml file of waringView
+        FXMLLoader loader2 = new FXMLLoader();
+        loader2.setLocation(getClass().getResource("../view/WarningView.fxml"));
+        Pane warnPane = null;
+        try {
+            warnPane = loader2.load();
+        }catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("文件未发现");
+        }
+        //create the warn scene
+        Scene warnScene = new Scene(warnPane);
+        warnStage.setScene(warnScene);
+        warnController =  loader2.getController();
+        warnController.setDispatcher(this);
         // create another fxml loader to load the fxml file of mainview
         FXMLLoader loader1 = new FXMLLoader();
         loader1.setLocation(getClass().getResource("../view/MainView.fxml"));
@@ -320,7 +357,9 @@ public class Dispatcher extends Application {
              * Scene(root,400,400);
              * scene.getStylesheets().add(getClass().getResource(
              * "application.css").toExternalForm());
+             * 
              */
+            this.mainStage = mainStage;
             mainStage.setTitle("进程调度器");
             mainStage.getIcons().add(new Image("images/scheduler.png"));
             mainStage.setResizable(false);
@@ -444,18 +483,18 @@ public class Dispatcher extends Application {
         this.needWait = needWait;
     }
 
-    /*public boolean isHasStartDispatch() {
-        return hasStartDispatch;
-    }
-
-    public void setHasStartDispatch(boolean hasStartDispatch) {
-        this.hasStartDispatch = hasStartDispatch;
-    }*/
+    /*
+     * public boolean isHasStartDispatch() { return hasStartDispatch; }
+     * 
+     * public void setHasStartDispatch(boolean hasStartDispatch) {
+     * this.hasStartDispatch = hasStartDispatch; }
+     */
     public void notifyDispatchThread() {
         synchronized (this) {
             this.notify();
         }
     }
+
     public void createNewDispatchThread() {
         dispathThread = new Thread(new DispatchRun());
     }
@@ -463,5 +502,30 @@ public class Dispatcher extends Application {
     public Thread getCompletedThread() {
         return completedThread;
     }
+
+    public boolean isClearSignal() {
+        return clearSignal;
+    }
+
+    public void setClearSignal(boolean clearSignal) {
+        this.clearSignal = clearSignal;
+    }
+
+    public Stage getWarnStage() {
+        return warnStage;
+    }
+
+    public WarningController getWarnController() {
+        return warnController;
+    }
+
+    public static int getTimeCounter() {
+        return timeCounter;
+    }
+
+    public static void setTimeCounter(int timeCounter) {
+        Dispatcher.timeCounter = timeCounter;
+    }
     
+
 }

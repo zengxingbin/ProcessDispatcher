@@ -159,7 +159,10 @@ public class MainController {
     private Button exitButoon;
     // jude the if the dispatcher button has been clidked
     private boolean isClicked;
-
+    //sure whether reset
+    private boolean sureReset;
+    //sure whether exit
+    private boolean sureExit;
     /**
      * this method will be auto-called after the construction to set the some
      * initial data
@@ -217,7 +220,7 @@ public class MainController {
             }
 
         });
-     // add focus listener to the newProName textfield
+        // add focus listener to the newProName textfield
         newProName.focusedProperty().addListener((arg0, oldPropertyValue, newPropertyValue) -> {
             if (newPropertyValue) {
                 proNameTip.setVisible(false);
@@ -421,6 +424,7 @@ public class MainController {
 
             if (dispatcher.getDispathThread() == dispatcher.getCompletedThread())
                 dispatcher.createNewDispatchThread();
+            dispatcher.getDispathThread().setDaemon(true);
             dispatcher.getDispathThread().start();
 
         } else {
@@ -442,11 +446,44 @@ public class MainController {
      */
     @FXML
     public void reset() {
+        /*
+         * Thread clearThread = new Thread(new Runnable() {
+         * 
+         * @Override public void run() { while (true) { synchronized
+         * (dispatcher.getObj()) { dispatcher.getReadyQueue().clear();
+         * dispatcher.getWaitQueue().clear();
+         * dispatcher.getFinishQueue().clear();
+         * dispatcher.getRunningProcess().clear(); break; } } } });
+         * clearThread.start();
+         */
+        
+        //at the begining,sure the value of sureRest is false
+        sureReset = false;
+        if (dispatcher.getDispathThread().isAlive()) {
+            //suspend the dispatch thread when the tip view appear
+            dispatcher.setNeedWait(true);
+            dispatcher.getWarnController().getText().setText("进程正在执行，确认要重置吗？");
+            dispatcher.getWarnStage().showAndWait();
+            if(!sureReset)
+                return;
+            // send the clear signal to clear all the list
+            dispatcher.setClearSignal(true);
+            while (dispatcher.isClearSignal()) {
+                try {
+                    Thread.currentThread().sleep(100);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+        }
         dispatcher.getReadyQueue().clear();
         dispatcher.getWaitQueue().clear();
         dispatcher.getFinishQueue().clear();
         dispatcher.getRunningProcess().clear();
+
     }
+
     /**
      * reset to clear what you input
      */
@@ -462,16 +499,16 @@ public class MainController {
      */
     @FXML
     public void addnewProcess() {
-        //check your input
+        // check your input
         boolean addSuccess = false;
         String proName = newProName.getText();
         String propriority = newProPriority.getText();
         String proServiceTime = newProSeviceTime.getText();
-        if(proName == null)
+        if (proName == null)
             proNameTip.setVisible(true);
         else
             addSuccess = true;
-        if("".equals(proName.trim())) {
+        if ("".equals(proName.trim())) {
             proNameTip.setVisible(true);
             addSuccess = false;
         }
@@ -489,7 +526,7 @@ public class MainController {
             priorityTip.setVisible(true);
             return;
         }
-        if(!addSuccess)
+        if (!addSuccess)
             return;
         process.setPriority(priority);
         process.setServiceTime(serviceTime);
@@ -554,7 +591,21 @@ public class MainController {
         dispatcher.getPopupController().getInputTip().setText("   请输入随机进程个数:");
         dispatcher.getPopupStage().showAndWait();
     }
-
+    @FXML
+    public void exit() {
+        if(dispatcher.getDispathThread().isAlive()) {
+            //suspend the dispatch thread when the tip view appear
+          //suspend the dispatch thread when the tip view appear
+            dispatcher.setNeedWait(true);
+            dispatcher.setNeedWait(true);
+            dispatcher.getWarnController().getText().setText("进程正在执行，确认要退出吗？");
+            dispatcher.getWarnStage().showAndWait();
+            if(!sureExit)
+                return;
+        }
+        dispatcher.getMainStage().close();
+            
+    }
     public void setDispatcher(Dispatcher dispatcher) {
         this.dispatcher = dispatcher;
     }
@@ -563,4 +614,20 @@ public class MainController {
         return readyQueue;
     }
 
+    public boolean isSureReset() {
+        return sureReset;
+    }
+
+    public void setSureReset(boolean sureReset) {
+        this.sureReset = sureReset;
+    }
+
+    public boolean isSureExit() {
+        return sureExit;
+    }
+
+    public void setSureExit(boolean sureExit) {
+        this.sureExit = sureExit;
+    }
+    
 }

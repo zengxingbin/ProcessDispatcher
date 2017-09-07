@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.text.*?>
+<?import javafx.scene.control.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<AnchorPane prefHeight="123.0" prefWidth="327.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="view.WarningController">
+   <children>
+      <Label fx:id="invalidInputTip" layoutX="145.0" layoutY="59.0" text="请输入1~10之间的数字！" textFill="#d30b0b" visible="false" />
+      <Button fx:id="confirmButton" layoutX="80.0" layoutY="82.0" mnemonicParsing="false" onAction="#confirm" text="确认" />
+      <Button fx:id="cancelButton" layoutX="208.0" layoutY="82.0" mnemonicParsing="false" onAction="#cancel" text="取消" />
+      <Text fx:id="text" layoutX="40.0" layoutY="53.0" strokeType="OUTSIDE" strokeWidth="0.0" text="进程正在执行，确认要重置吗？">
+         <font>
+            <Font size="18.0" />
+         </font>
+      </Text>
+   </children>
+</AnchorPane>

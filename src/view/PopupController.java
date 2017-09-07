@@ -67,8 +67,9 @@ public class PopupController {
         // when the dispatchThread does't start or it finish,reset the start
         // time and current time
         if (!dispatcher.getDispathThread().isAlive()) {
-            dispatcher.setStartTime(System.currentTimeMillis() / 1000);
-            dispatcher.setCurrentTime(dispatcher.getStartTime());
+            /*dispatcher.setStartTime(System.currentTimeMillis() / 1000);
+            dispatcher.setCurrentTime(dispatcher.getStartTime());*/
+            dispatcher.setTimeCounter(0);
         }
         // random generate the priority and service time of process
         Random rand = new Random();
@@ -85,9 +86,10 @@ public class PopupController {
             process.setRemainingTime(process.getServiceTime());
             // join in the readyQueue
             if (dispatcher.getReadyQueue().size() < dispatcher.getProcessmaxnum()) {
-                process.setArrivalTime((int) (dispatcher.getCurrentTime() - dispatcher.getStartTime()));
+                //process.setArrivalTime((int) (dispatcher.getCurrentTime() - dispatcher.getStartTime()));
+                process.setArrivalTime(dispatcher.getTimeCounter());
                 // record current time
-                dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
+                //dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
                 dispatcher.getReadyQueue().add(process);
             }else {
                 //join in the wait queue

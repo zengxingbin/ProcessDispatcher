@@ -166,6 +166,6 @@
          </content>
       </TitledPane>
       <Button fx:id="pauseAndContinueButton" layoutX="805.0" layoutY="451.0" mnemonicParsing="false" onAction="#suspendAndContinue" text="暂停" />
-      <Button fx:id="exitButoon" layoutX="902.0" layoutY="451.0" mnemonicParsing="false" text="退出" />
+      <Button fx:id="exitButoon" layoutX="902.0" layoutY="451.0" mnemonicParsing="false" onAction="#exit" text="退出" />
    </children>
 </AnchorPane>
