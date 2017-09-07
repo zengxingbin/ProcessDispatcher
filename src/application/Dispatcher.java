@@ -1,12 +1,7 @@
 package application;
 
-import java.awt.TrayIcon.MessageType;
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.Properties;
-
 import javax.swing.JOptionPane;
-
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -17,11 +12,9 @@ import view.MainController;
 import view.PopupController;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
-
 public class Dispatcher extends Application {
-    private static long startTime = -1;
+    private static long startTime;
     private static long currentTime;
     private static int processCounter = 0;// as the the process id
     private final static int PROCESSMAXNUM = 10;// maximum number of processe
@@ -42,153 +35,19 @@ public class Dispatcher extends Application {
     private ObservableList<ProcessPCB> runningProcess = FXCollections.observableArrayList();
     // current running process
     private ProcessPCB process;
-    //scheduling strategy 
-    private int schedulingStrategy;//0.rr 1.priority 2.SPN 3.SRT
-    //contention strategy
+    // scheduling strategy
+    private int schedulingStrategy = -1;// 0.rr 1.priority 2.SPN 3.SRT
+    // contention strategy
     private boolean isContention;
-    //create a thread to perform scheduling
-    private Thread dispathThread = new Thread(new Runnable() {
-        
-        @Override
-        public void run() {
-            System.out.println("start the dispatch thread!");
-            
-                switch(schedulingStrategy) {
-                    case 0:
-                        rrDispatcher();
-                        break;
-                    case 1:
-                        break;
-                    case 2:
-                        break;
-                    case 3:
-                        break;
-                }
-                        
-            
-            
-        }
-        public void rrDispatcher() {
-               int timeSlicing = 0;
-               if (!readyQueue.isEmpty()) {
-                   // first process to be run
-                   // process = readyQueue.remove(0);
-                   removeSignal = true;
-                   // wait for the readyQueue remove first process
-                   while (true) {
-                       try {
-                           Thread.currentThread().sleep(100);
-                       } catch (InterruptedException e) {
-                           e.printStackTrace();
-                       }
-                       if (process != null)
-                           break;
-                   }
-                   System.out.println(process);
-                   // add the process to running table
-                   runningProcess.add(process);
-                   startTime = System.currentTimeMillis() / 1000;
-                   currentTime = startTime;
-                   process.setStartTime((int) (currentTime - startTime));
-                   process.setFirstTime(false);
-                   process.setHasRun(true);
-               } else {
-                   System.out.println("There is no  process in ready queue! ");
-                   JOptionPane.showMessageDialog(null, "就绪队列中无任何进程，请先创建一些进程！", "提示", JOptionPane.WARNING_MESSAGE);
-                   return;
-               }
-               while (true) {
-                   process.setStatus(1);// 1 represents running
-                   process.setRunTime(process.getRunTime() + 1);
-                   process.setRemainingTime(process.getRemainingTime() - 1);
-                   System.out.println("**Currnet running process:" + process + "**");
-                   // current process has run for one seconds,increase the time slicing
-                   try {
-                       Thread.currentThread().sleep(1000);
-                   } catch (InterruptedException e) {
-                       // TODO Auto-generated catch block
-                       e.printStackTrace();
-                   }
-                   timeSlicing++;
-                   // if process finish
-                   if (process.getRemainingTime() == 0) {
-                       currentTime = System.currentTimeMillis() / 1000;
-                       // set the end time of process
-                       process.setEndTime((int) (currentTime - startTime));
-                       // compute the turnaround time
-                       process.setTurnaroundTime(process.getWaitTime() + process.getServiceTime());
-                       // compute the normalized turnaround time
-                       process.setNormalizedTurnaroundTime((double) process.getTurnaroundTime() / process.getServiceTime());
-                       // change the status of process:finish
-                       process.setStatus(2);
-                       // join to the finishQueue
-                       finishQueue.add(process);
-                       process.setFinish(true);
-                       if (readyQueue.isEmpty()) {
-                           // process = null;
-                           System.out.println("--All processes have been completed!--");
-                           // print the finishQueue
-                           
-                             for (ProcessPCB process : finishQueue)
-                             System.out.println(process);
-                            
-                           break;
-                       }
-                   } else if (timeSlicing >= TIMESLICING) {// join in the readyQueue
-                                                           // when time out
-                       // change the status of process
-                       process.setStatus(0);
-                       // join in the readyQueue
-                       //readyQueue.add(process);
-                       addSignal = true;
-                       //wait for the current thread added to the reaydQueue when time out
-                       while(true) {
-                           try {
-                               Thread.currentThread().sleep(100);
-                           } catch (InterruptedException e) {
-                               e.printStackTrace();
-                           }
-                           if(!addSignal)
-                               break;
-                       }
-                   }
-
-                   if (!readyQueue.isEmpty()) {
-                       if (timeSlicing >= TIMESLICING || process.isFinish()) {
-                           // next process to be run
-                           //process = readyQueue.remove(0);
-                           removeSignal = true;//send the remove signal to the updateReadyQueueThread
-                           //wait for the next process to be run
-                           while(true) {
-                               try {
-                                   Thread.currentThread().sleep(100);
-                               } catch (InterruptedException e) {
-                                   e.printStackTrace();
-                               }
-                               if(!removeSignal)
-                                   break;
-                           }
-                           // other process wait for the time slicing
-                           /*for (ProcessPCB process : readyQueue)
-                               process.setWaitTime(process.getWaitTime() + 1);*/
-                           waitSignal = true;//send waitSignal to the updateReadyQueueThread
-                           // record the first time to start
-                           if (process.isFirstTime()) {
-                               currentTime = System.currentTimeMillis() / 1000;
-                               process.setStartTime((int) (currentTime - startTime));
-                               process.setFirstTime(false);
-                               process.setHasRun(true);
-                           }
-
-                           // clear the time slicing for every process
-                           timeSlicing = 0;
-                       }
-                   }
-               }
-               // rmove the last completed process from runningProcess table
-               runningProcess.remove(0);
-           }
-    });
+    // decide another thread if needing waiting
+    private boolean needWait;
+    // create a thread to perform scheduling
+    // has the dispatch thread started
+    //private boolean hasStartDispatch;
+    //the dispatch thread
+    private Thread dispathThread = new Thread(new DispatchRun());
+    //record the last completed dispathThread to decide whether create a new dispatch thread
+    private Thread completedThread = null;
     // this thread is responsible for updating the readyQueue
     private Thread updateReadyQueue = new Thread(new Runnable() {
 
@@ -200,10 +59,10 @@ public class Dispatcher extends Application {
                 if (removeSignal && !readyQueue.isEmpty()) {
                     process = readyQueue.remove(0);
                     removeSignal = false;
-                }else if(addSignal) {
+                } else if (addSignal) {
                     readyQueue.add(process);
                     addSignal = false;
-                }else if(waitSignal) {
+                } else if (waitSignal) {
                     for (ProcessPCB process : readyQueue)
                         process.setWaitTime(process.getWaitTime() + 1);
                     waitSignal = false;
@@ -216,7 +75,7 @@ public class Dispatcher extends Application {
     private boolean removeSignal;// signal for removing process
     private boolean addSignal;// signal for adding process
     private boolean sortSignal;// signal for sorting the list
-    private boolean waitSignal;//signal for increase the wait time
+    private boolean waitSignal;// signal for increase the wait time
     // signal for updating the wait queue
     private boolean removeSignal1;
     private boolean addSignal1;
@@ -232,6 +91,183 @@ public class Dispatcher extends Application {
     private boolean addSignal3;
     private boolean sortSignal3;
     private boolean waitSignal3;
+    class DispatchRun implements Runnable {
+
+        @Override
+        public void run() {
+            System.out.println("start the dispatch thread!");
+
+            switch (schedulingStrategy) {
+            case 0:
+                rrDispatcher();
+                break;
+            case 1:
+                break;
+            case 2:
+                break;
+            case 3:
+                break;
+            }
+
+            
+        }
+        public void rrDispatcher() {
+            int timeSlicing = 0;
+            if (!readyQueue.isEmpty()) {
+                // first process to be run
+                process = readyQueue.remove(0);
+                // removeSignal = true;
+                // wait for the readyQueue remove first process
+                /*
+                 * while (true) { try { Thread.currentThread().sleep(100); }
+                 * catch (InterruptedException e) { e.printStackTrace(); } if
+                 * (process != null) break; }
+                 */
+                // System.out.println(process);
+                // add the process to running table
+                runningProcess.add(process);
+                startTime = System.currentTimeMillis() / 1000;
+                currentTime = startTime;
+                process.setStartTime((int) (currentTime - startTime));
+                process.setFirstTime(false);
+                process.setHasRun(true);
+            } else {
+                System.out.println("There is no  process in ready queue! ");
+                JOptionPane.showMessageDialog(null, "就绪队列中无任何进程，请先创建一些进程！", "提示", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            while (true) {
+
+                /*synchronized (this) {
+                    while(needWait) {
+                        try {
+                            System.out.println("等待了");
+                            this.wait();
+                            System.out.println("从等待的地方开始，继续向下执行");
+                        } catch (InterruptedException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+
+                    }
+
+                }*/
+                //dispatch thread suspend
+                while(needWait) {
+                    try {
+                        Thread.currentThread().sleep(100);
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+                process.setStatus(1);// 1 represents running
+                process.setRunTime(process.getRunTime() + 1);
+                process.setRemainingTime(process.getRemainingTime() - 1);
+                System.out.println("**Currnet running process:" + process + "**");
+                // update the runningprocess,the runningprocess list will be
+                // updated only the quote of current process is changed
+                runningProcess.remove(0);
+                try {
+                    process = (ProcessPCB) process.clone();
+                    runningProcess.add(process);
+                } catch (CloneNotSupportedException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                }
+                // current process has run for one seconds,increase the time
+                // slicing
+                try {
+                    Thread.currentThread().sleep(1000);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                timeSlicing++;
+                // if process finish
+                if (process.getRemainingTime() == 0) {
+                    currentTime = System.currentTimeMillis() / 1000;
+                    // set the end time of process
+                    process.setEndTime((int) (currentTime - startTime));
+                    // compute the turnaround time
+                    process.setTurnaroundTime(process.getWaitTime() + process.getServiceTime());
+                    // compute the normalized turnaround time
+                    process.setNormalizedTurnaroundTime(
+                            (double) process.getTurnaroundTime() / process.getServiceTime());
+                    // change the status of process:finish
+                    process.setStatus(2);
+                    // join to the finishQueue
+                    finishQueue.add(process);
+                    process.setFinish(true);
+                    if (readyQueue.isEmpty()) {
+                        // process = null;
+                        System.out.println("--All processes have been completed!--");
+                        // print the finishQueue
+
+                        for (ProcessPCB process : finishQueue)
+                            System.out.println(process);
+
+                        break;
+                    }
+                } else if (timeSlicing >= TIMESLICING) {// join in the
+                                                        // readyQueue
+                                                        // when time out
+                    // change the status of process
+                    process.setStatus(0);
+                    // join in the readyQueue
+                    readyQueue.add(process);
+                    // addSignal = true;
+                    // wait for the current thread added to the reaydQueue when
+                    // time out
+                    /*
+                     * while(true) { try { Thread.currentThread().sleep(100); }
+                     * catch (InterruptedException e) { e.printStackTrace(); }
+                     * if(!addSignal) break; }
+                     */
+                }
+
+                if (!readyQueue.isEmpty()) {
+                    if (timeSlicing >= TIMESLICING || process.isFinish()) {
+                        // next process to be run
+                        process = readyQueue.remove(0);
+                        runningProcess.remove(0);
+                        runningProcess.add(process);
+                        // removeSignal = true;//send the remove signal to the
+                        // updateReadyQueueThread
+                        // wait for the next process to be run
+                        /*
+                         * while(true) { try {
+                         * Thread.currentThread().sleep(100); } catch
+                         * (InterruptedException e) { e.printStackTrace(); }
+                         * if(!removeSignal) break; }
+                         */
+                        // other process wait for the time slicing
+                        for (ProcessPCB process : readyQueue)
+                            process.setWaitTime(process.getWaitTime() + 1);
+                        // waitSignal = true;//send waitSignal to the
+                        // updateReadyQueueThread
+                        // record the first time to start
+                        if (process.isFirstTime()) {
+                            currentTime = System.currentTimeMillis() / 1000;
+                            process.setStartTime((int) (currentTime - startTime));
+                            process.setFirstTime(false);
+                            process.setHasRun(true);
+                        }
+
+                        // clear the time slicing for every process
+                        timeSlicing = 0;
+                    }
+                }
+            }
+            // rmove the last completed process from runningProcess table
+            runningProcess.remove(0);
+            // reset the hasStartDispatch value when the dispatch thread finish
+            //hasStartDispatch = false;
+            //record this finish thread 
+            completedThread = dispathThread;
+        }
+        
+    }
     public Dispatcher() {
         // create popup Stage
         popupStage = new Stage();
@@ -275,8 +311,7 @@ public class Dispatcher extends Application {
         mainController.setDispatcher(this);
         mainController.setInitialData();
     }
-    
-    
+
     @Override
     public void start(Stage mainStage) {
         try {
@@ -295,7 +330,7 @@ public class Dispatcher extends Application {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
+
     }
 
     public static void main(String[] args) {
@@ -308,7 +343,6 @@ public class Dispatcher extends Application {
      * 
      * @param readyQueue
      */
-    
 
     public Stage getMainStage() {
         return mainStage;
@@ -381,32 +415,53 @@ public class Dispatcher extends Application {
     public Thread getUpdateReadyQueue() {
         return updateReadyQueue;
     }
-    
 
     public Thread getDispathThread() {
         return dispathThread;
     }
 
-
     public int getSchedulingStrategy() {
         return schedulingStrategy;
     }
-
 
     public void setSchedulingStrategy(int schedulingStrategy) {
         this.schedulingStrategy = schedulingStrategy;
     }
 
-
     public boolean isContention() {
         return isContention;
     }
-
 
     public void setContention(boolean isContention) {
         this.isContention = isContention;
     }
 
-    
+    public boolean isNeedWait() {
+        return needWait;
+    }
+
+    public void setNeedWait(boolean needWait) {
+        this.needWait = needWait;
+    }
+
+    /*public boolean isHasStartDispatch() {
+        return hasStartDispatch;
+    }
+
+    public void setHasStartDispatch(boolean hasStartDispatch) {
+        this.hasStartDispatch = hasStartDispatch;
+    }*/
+    public void notifyDispatchThread() {
+        synchronized (this) {
+            this.notify();
+        }
+    }
+    public void createNewDispatchThread() {
+        dispathThread = new Thread(new DispatchRun());
+    }
+
+    public Thread getCompletedThread() {
+        return completedThread;
+    }
     
 }

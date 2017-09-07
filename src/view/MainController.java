@@ -1,5 +1,7 @@
 package view;
 
+import javax.swing.JOptionPane;
+
 import application.Dispatcher;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.IntegerProperty;
@@ -9,6 +11,7 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
@@ -141,13 +144,21 @@ public class MainController {
     @FXML
     private TextField newProSeviceTime;
     @FXML
+    private Label serviceTimeTip;
+    @FXML
     private TextField newProPriority;
+    @FXML
+    private Label priorityTip;
+    @FXML
+    private Label proNameTip;
     @FXML
     private Button addButton;
     @FXML
     private Button pauseAndContinueButton;
     @FXML
     private Button exitButoon;
+    // jude the if the dispatcher button has been clidked
+    private boolean isClicked;
 
     /**
      * this method will be auto-called after the construction to set the some
@@ -191,21 +202,43 @@ public class MainController {
         isContention.setItems(FXCollections.observableArrayList());
         isContention.getItems().add("抢占");
         isContention.getItems().add("非抢占");
+        // add focus listener to the newProSeviceTime textfield
+        newProSeviceTime.focusedProperty().addListener((arg0, oldPropertyValue, newPropertyValue) -> {
+            if (newPropertyValue) {
+                serviceTimeTip.setVisible(false);
+
+            }
+
+        });
+        // add focus listener to the newProPriority textfield
+        newProPriority.focusedProperty().addListener((arg0, oldPropertyValue, newPropertyValue) -> {
+            if (newPropertyValue) {
+                priorityTip.setVisible(false);
+            }
+
+        });
+     // add focus listener to the newProName textfield
+        newProName.focusedProperty().addListener((arg0, oldPropertyValue, newPropertyValue) -> {
+            if (newPropertyValue) {
+                proNameTip.setVisible(false);
+            }
+
+        });
     }
 
     public void setInitialData() {
         readyQueue.setItems(dispatcher.getReadyQueue());
         initializeTable(readyQueue, pId, pName, priority, arrivalTime, serviceTime, startTime, waitTime, runTime,
-                remainingTime, endTime, normalizedTurnaroundTime, normalizedTurnaroundTime);
+                remainingTime, endTime, turnaroundTime, normalizedTurnaroundTime);
         waitQueue.setItems(dispatcher.getWaitQueue());
         initializeTable(waitQueue, pId1, pName1, priority1, arrivalTime1, serviceTime1, startTime1, waitTime1, runTime1,
-                remainingTime1, endTime1, normalizedTurnaroundTime1, normalizedTurnaroundTime1);
+                remainingTime1, endTime1, turnaroundTime1, normalizedTurnaroundTime1);
         finishQueue.setItems(dispatcher.getFinishQueue());
         initializeTable(finishQueue, pId2, pName2, priority2, arrivalTime2, serviceTime2, startTime2, waitTime2,
-                runTime, remainingTime2, endTime2, normalizedTurnaroundTime2, normalizedTurnaroundTime2);
+                runTime2, remainingTime2, endTime2, turnaroundTime2, normalizedTurnaroundTime2);
         runningTable.setItems(dispatcher.getRunningProcess());
         initializeTable(runningTable, pId3, pName3, priority3, arrivalTime3, serviceTime3, startTime3, waitTime3,
-                runTime3, remainingTime3, endTime3, normalizedTurnaroundTime3, normalizedTurnaroundTime3);
+                runTime3, remainingTime3, endTime3, turnaroundTime3, normalizedTurnaroundTime3);
 
         /*
          * pId.setStyle("-fx-alignment:CENTER");
@@ -321,40 +354,107 @@ public class MainController {
      */
     @FXML
     public void startDispatch() {
+        if (dispatcher.getReadyQueue().isEmpty()) {
+            System.out.println("There is no  process in ready queue! ");
+            JOptionPane.showMessageDialog(null, "就绪队列中无任何进程，请先创建一些进程！", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         // gain the scheduling strategy
         String scheduleModel = schedulingStrategy.getValue();
-        // set the scheduling strategy in dispatcher
-        if ("时间片轮转".equals(scheduleModel))
-            dispatcher.setSchedulingStrategy(0);
-        else if ("优先级调度".equals(scheduleModel))
-            dispatcher.setSchedulingStrategy(1);
-        else if ("最短进程优先".equals(scheduleModel))
-            dispatcher.setSchedulingStrategy(2);
-        else if ("最短剩余时间".equals(scheduleModel))
-            dispatcher.setSchedulingStrategy(3);
         // gain the contention strategy
         String contention = isContention.getValue();
-        // set the contention strategy in the dispatcher
-        if ("非抢占".equals(contention))
+        if (scheduleModel == null) {
+            // default scheduleModel
+            scheduleModel = "时间片轮转";
+            schedulingStrategy.setValue("时间片轮转");
+        }
+        // set the default contention strategy
+        if (contention == null) {
+            contention = "非抢占";
+            isContention.setValue("非抢占");
+        }
+        // set the scheduling strategy in dispatcher
+        if ("时间片轮转".equals(scheduleModel)) {
+            isContention.setValue("抢占");
             dispatcher.setContention(false);
-        else if ("抢占".equals(contention))
+            dispatcher.setSchedulingStrategy(0);
+        } else if ("优先级调度".equals(scheduleModel)) {
+            if ("非抢占".equals(contention))
+                dispatcher.setContention(false);
+            else
+                dispatcher.setContention(true);
+            dispatcher.setSchedulingStrategy(1);
+        } else if ("最短进程优先".equals(scheduleModel)) {
+            isContention.setValue("非抢占");
+            dispatcher.setContention(false);
+            dispatcher.setSchedulingStrategy(2);
+        } else if ("最短剩余时间".equals(scheduleModel)) {
+            isContention.setValue("抢占");
             dispatcher.setContention(true);
+            dispatcher.setSchedulingStrategy(3);
+        }
+
         // dispatcher.rrDispatcher();
         // start the update readyQueue thread
-        dispatcher.getUpdateReadyQueue().setDaemon(true);
-        dispatcher.getUpdateReadyQueue().start();
+        /*
+         * dispatcher.getUpdateReadyQueue().setDaemon(true);
+         * dispatcher.getUpdateReadyQueue().start();
+         */
         // start the dispathcer thread in dispatcher
-        dispatcher.getDispathThread().setDaemon(true);
-        dispatcher.getDispathThread().start();
+
+        if (!dispatcher.getDispathThread().isAlive()) {
+            // dispatcher.getDispathThread().setDaemon(true);
+            /*
+             * if (dispatcher.isHasStartDispatch()) { //conntinue to dispatch
+             * pauseAndContinueButton.setText("暂停"); } else {
+             * dispatcher.getDispathThread().start();
+             * dispatcher.setHasStartDispatch(true); }
+             */
+            /*
+             * compare the dispatch thread with the last completed dispatch to
+             * decide whether starting the current thread or creating a new
+             * dispatch to start because the completed thread cant't back to the
+             * former state once it ends you can refer to the operation system
+             * principle and find the answer from the graph of five state if you
+             * don't understand
+             */
+
+            if (dispatcher.getDispathThread() == dispatcher.getCompletedThread())
+                dispatcher.createNewDispatchThread();
+            dispatcher.getDispathThread().start();
+
+        } else {
+            if ("继续".equals(pauseAndContinueButton.getText())) {
+                pauseAndContinueButton.setText("暂停");
+                dispatcher.setNeedWait(false);
+            } else
+                JOptionPane.showMessageDialog(null, "已经开始调度！", "提示", JOptionPane.WARNING_MESSAGE);
+
+        }
 
     }
 
     /**
      * handling reset event
      */
+    /**
+     * reset to clear all the list
+     */
     @FXML
     public void reset() {
-
+        dispatcher.getReadyQueue().clear();
+        dispatcher.getWaitQueue().clear();
+        dispatcher.getFinishQueue().clear();
+        dispatcher.getRunningProcess().clear();
+    }
+    /**
+     * reset to clear what you input
+     */
+    @FXML
+    public void reset2() {
+        newProName.clear();
+        newProPriority.clear();
+        newProSeviceTime.clear();
     }
 
     /**
@@ -362,7 +462,58 @@ public class MainController {
      */
     @FXML
     public void addnewProcess() {
-
+        //check your input
+        boolean addSuccess = false;
+        String proName = newProName.getText();
+        String propriority = newProPriority.getText();
+        String proServiceTime = newProSeviceTime.getText();
+        if(proName == null)
+            proNameTip.setVisible(true);
+        else
+            addSuccess = true;
+        if("".equals(proName.trim())) {
+            proNameTip.setVisible(true);
+            addSuccess = false;
+        }
+        // create the new process then set the property
+        ProcessPCB process = new ProcessPCB();
+        process.setpName(proName);
+        int priority = 0;
+        int serviceTime = 0;
+        try {
+            priority = Integer.parseInt(newProPriority.getText());
+            serviceTime = Integer.parseInt(newProSeviceTime.getText());
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+            serviceTimeTip.setVisible(true);
+            priorityTip.setVisible(true);
+            return;
+        }
+        if(!addSuccess)
+            return;
+        process.setPriority(priority);
+        process.setServiceTime(serviceTime);
+        process.setPid(dispatcher.getProcessCounter());
+        dispatcher.setProcessCounter(dispatcher.getProcessCounter() + 1);
+        process.setStatus(0);
+        // when the dispatchThread does't start or it finish,reset the start
+        // time and current time
+        if (!dispatcher.getDispathThread().isAlive()) {
+            dispatcher.setStartTime(System.currentTimeMillis() / 1000);
+            dispatcher.setCurrentTime(dispatcher.getStartTime());
+        }
+        process.setFirstTime(true);
+        process.setRemainingTime(process.getServiceTime());
+        if (dispatcher.getReadyQueue().size() < dispatcher.getProcessmaxnum()) {
+            process.setArrivalTime((int) (dispatcher.getCurrentTime() - dispatcher.getStartTime()));
+            // record current time
+            dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
+            // join in the readyQueue
+            dispatcher.getReadyQueue().add(process);
+        } else {
+            // join int the wait queue
+            dispatcher.getWaitQueue().add(process);
+        }
     }
 
     /**
@@ -371,7 +522,27 @@ public class MainController {
      */
     @FXML
     public void suspendAndContinue() {
-
+        String text = pauseAndContinueButton.getText();
+        // System.out.println(dispatcher.getUpdateReadyQueue().isAlive());
+        if (dispatcher.getDispathThread().isAlive()) {
+            if ("暂停".equals(text)) {
+                pauseAndContinueButton.setText("继续");
+                // the dispatch thread need wait
+                dispatcher.setNeedWait(true);
+            } else if ("继续".equals(text)) {
+                pauseAndContinueButton.setText("暂停");
+                // notify the dispatch thread
+                /*
+                 * synchronized (dispatcher) { dispatcher.setNeedWait(false);
+                 * dispatcher.notifyDispatchThread(); System.out.println("唤醒");
+                 * System.out.println("dispathcer thread:" +
+                 * dispatcher.getDispathThread().isAlive());
+                 * 
+                 * }
+                 */
+                dispatcher.setNeedWait(false);
+            }
+        }
     }
 
     @FXML

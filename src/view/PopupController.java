@@ -24,17 +24,19 @@ public class PopupController {
     @FXML
     private Button cancelButton;
     private Dispatcher dispatcher;
+
     @FXML
     private void initialize() {
-        //add focus listener to the initProNum textfield
+        // add focus listener to the initProNum textfield
         initProNum.focusedProperty().addListener((arg0, oldPropertyValue, newPropertyValue) -> {
             if (newPropertyValue) {
                 invalidInputTip.setVisible(false);
-                 
+
             }
 
         });
-        //confirm the initial number of process once the the key enter was released
+        // confirm the initial number of process once the the key enter was
+        // released
         initProNum.setOnKeyReleased(new EventHandler<KeyEvent>() {
             @Override
             public void handle(KeyEvent event) {
@@ -44,6 +46,7 @@ public class PopupController {
             }
         });
     }
+
     /**
      * confirm to generate several process
      */
@@ -52,17 +55,18 @@ public class PopupController {
         int proNum;
         try {
             proNum = Integer.parseInt(initProNum.getText());
-        }catch(NumberFormatException e) {
+        } catch (NumberFormatException e) {
             System.out.println(e);
             invalidInputTip.setVisible(true);
             return;
         }
-        if(proNum < 0 || proNum > 10) {
+        if (proNum < 0 || proNum > 10) {
             invalidInputTip.setVisible(true);
             return;
         }
-        //set the 
-        if(dispatcher.getStartTime() == -1) {
+        // when the dispatchThread does't start or it finish,reset the start
+        // time and current time
+        if (!dispatcher.getDispathThread().isAlive()) {
             dispatcher.setStartTime(System.currentTimeMillis() / 1000);
             dispatcher.setCurrentTime(dispatcher.getStartTime());
         }
@@ -73,48 +77,60 @@ public class PopupController {
             // initialize process
             process.setpName("process" + dispatcher.getProcessCounter());
             process.setPid(dispatcher.getProcessCounter());
-            dispatcher.setProcessCounter(dispatcher.getProcessCounter()+1);
+            dispatcher.setProcessCounter(dispatcher.getProcessCounter() + 1);
             process.setPriority(rand.nextInt(20));
             process.setStatus(0);
-            process.setArrivalTime((int) (dispatcher.getCurrentTime() - dispatcher.getStartTime()));
             process.setFirstTime(true);
-            // record current time
-            dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
             process.setServiceTime(rand.nextInt(10) + 1);
             process.setRemainingTime(process.getServiceTime());
             // join in the readyQueue
-            dispatcher.getReadyQueue().add(process);
+            if (dispatcher.getReadyQueue().size() < dispatcher.getProcessmaxnum()) {
+                process.setArrivalTime((int) (dispatcher.getCurrentTime() - dispatcher.getStartTime()));
+                // record current time
+                dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
+                dispatcher.getReadyQueue().add(process);
+            }else {
+                //join in the wait queue
+                dispatcher.getWaitQueue().add(process);
+            }
         }
         dispatcher.getPopupStage().close();
         dispatcher.getMainController().getReadyQueue().requestFocus();
-        //dispatcher.getMainController().getReadyQueue().getSelectionModel().select(0);
-        
+        // dispatcher.getMainController().getReadyQueue().getSelectionModel().select(0);
+
     }
+
     @FXML
     private void cancel() {
         dispatcher.getPopupStage().close();
     }
+
     public void setDispatcher(Dispatcher dispatcher) {
         this.dispatcher = dispatcher;
     }
+
     public Label getInvalidInputTip() {
         return invalidInputTip;
     }
+
     public void setInvalidInputTip(Label invalidInputTip) {
         this.invalidInputTip = invalidInputTip;
     }
+
     public TextField getInitProNum() {
         return initProNum;
     }
+
     public void setInitProNum(TextField initProNum) {
         this.initProNum = initProNum;
     }
+
     public Label getInputTip() {
         return inputTip;
     }
+
     public void setInputTip(Label inputTip) {
         this.inputTip = inputTip;
     }
-    
-    
+
 }

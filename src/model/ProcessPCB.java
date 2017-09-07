@@ -1,15 +1,9 @@
 package model;
 
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.StringProperty;
-import javafx.beans.property.SimpleDoubleProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
 
-public class ProcessPCB {
+public class ProcessPCB implements Cloneable{
     private int pid;// process id
     private String pName;// process name
     // status of process:0.ready 1.run 2.finish
@@ -228,5 +222,12 @@ public class ProcessPCB {
                 + ", normalizedTurnaroundTime=" + normalizedTurnaroundTime + ", runTime=" + runTime + ", remainingTime="
                 + remainingTime + ", isFirstTime=" + isFirstTime + ", isFinish=" + isFinish + "]";
     }
+    //overwirte the clone method
 
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        // TODO Auto-generated method stub
+        return (ProcessPCB)super.clone();
+    }
+    
 }

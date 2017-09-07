@@ -7,7 +7,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.layout.AnchorPane?>
 
-<AnchorPane prefHeight="650.0" prefWidth="956.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="view.MainController">
+<AnchorPane prefHeight="650.0" prefWidth="968.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="view.MainController">
    <children>
       <GridPane prefHeight="30.0" prefWidth="801.0">
         <columnConstraints>
@@ -45,7 +45,7 @@
             <TableColumn fx:id="arrivalTime" prefWidth="75.0" text="到达时间" />
             <TableColumn fx:id="serviceTime" prefWidth="75.0" text="服务时间" />
             <TableColumn fx:id="startTime" prefWidth="75.0" text="开始时间" />
-            <TableColumn fx:id="waitTime" prefWidth="75.0" text="已等待" />
+            <TableColumn fx:id="waitTime" prefWidth="75.0" text="等待时间" />
             <TableColumn fx:id="runTime" prefWidth="75.0" text="已运行" />
             <TableColumn fx:id="remainingTime" prefWidth="75.0" text="剩余时间" />
             <TableColumn fx:id="endTime" prefWidth="75.0" text="结束时间" />
@@ -69,7 +69,7 @@
             <TableColumn fx:id="arrivalTime1" prefWidth="75.0" text="到达时间" />
             <TableColumn fx:id="serviceTime1" prefWidth="75.0" text="服务时间" />
             <TableColumn fx:id="startTime1" prefWidth="75.0" text="开始时间" />
-            <TableColumn fx:id="waitTime1" prefWidth="75.0" text="已等待" />
+            <TableColumn fx:id="waitTime1" prefWidth="75.0" text="等待时间" />
             <TableColumn fx:id="runTime1" prefWidth="75.0" text="已运行" />
             <TableColumn fx:id="remainingTime1" prefWidth="75.0" text="剩余时间" />
             <TableColumn fx:id="endTime1" prefWidth="75.0" text="结束时间" />
@@ -88,7 +88,7 @@
             <TableColumn fx:id="arrivalTime2" prefWidth="75.0" text="到达时间" />
             <TableColumn fx:id="serviceTime2" prefWidth="75.0" text="服务时间" />
             <TableColumn fx:id="startTime2" prefWidth="75.0" text="开始时间" />
-            <TableColumn fx:id="waitTime2" prefWidth="75.0" text="已等待" />
+            <TableColumn fx:id="waitTime2" prefWidth="75.0" text="等待时间" />
             <TableColumn fx:id="runTime2" prefWidth="75.0" text="已运行" />
             <TableColumn fx:id="remainingTime2" prefWidth="75.0" text="剩余时间" />
             <TableColumn fx:id="endTime2" prefWidth="75.0" text="结束时间" />
@@ -108,7 +108,7 @@
             <TableColumn fx:id="arrivalTime3" prefWidth="75.0" text="到达时间" />
             <TableColumn fx:id="serviceTime3" prefWidth="75.0" text="服务时间" />
             <TableColumn fx:id="startTime3" prefWidth="75.0" text="开始时间" />
-            <TableColumn fx:id="waitTime3" prefWidth="75.0" text="已等待" />
+            <TableColumn fx:id="waitTime3" prefWidth="75.0" text="等待时间" />
             <TableColumn fx:id="runTime3" prefWidth="75.0" text="已运行" />
             <TableColumn fx:id="remainingTime3" prefWidth="75.0" text="剩余时间" />
             <TableColumn fx:id="endTime3" prefWidth="75.0" text="结束时间" />
@@ -116,17 +116,37 @@
             <TableColumn fx:id="normalizedTurnaroundTime3" prefWidth="63.0" text="Ts/Tr" />
          </columns>
       </TableView>
-      <TitledPane layoutX="805.0" layoutY="189.0" prefHeight="251.0" prefWidth="137.0" text="添加新的进程">
+      <TitledPane layoutX="805.0" layoutY="179.0" prefHeight="261.0" prefWidth="144.0" text="添加新的进程">
          <content>
             <GridPane prefHeight="213.0" prefWidth="92.0">
                <children>
-                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="进程名：" />
                   <TextField fx:id="newProName" GridPane.rowIndex="1" />
-                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="服务时间：" GridPane.rowIndex="2" />
-                  <TextField fx:id="newProSeviceTime" GridPane.rowIndex="3" />
-                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="优先级：" GridPane.rowIndex="4" />
-                  <TextField fx:id="newProPriority" GridPane.rowIndex="5" />
-                  <Button fx:id="addButton" mnemonicParsing="false" text="添加进程" GridPane.rowIndex="7" />
+                  <TextField fx:id="newProSeviceTime" promptText="请输入数字" GridPane.rowIndex="3" />
+                  <TextField fx:id="newProPriority" promptText="请输入数字" GridPane.rowIndex="5" />
+                  <HBox GridPane.rowIndex="7">
+                     <children>
+                        <Button fx:id="addButton" layoutX="825.0" layoutY="531.0" mnemonicParsing="false" onAction="#addnewProcess" text="添加进程" />
+                        <Button layoutX="892.0" layoutY="531.0" mnemonicParsing="false" onAction="#reset2" text="重置" />
+                     </children>
+                  </HBox>
+                  <HBox GridPane.rowIndex="4">
+                     <children>
+                        <Text layoutX="839.0" layoutY="537.0" strokeType="OUTSIDE" strokeWidth="0.0" text="优先级：" />
+                        <Label fx:id="priorityTip" layoutX="887.0" layoutY="525.0" text="请输入数字" textFill="#f80b0b" visible="false" />
+                     </children>
+                  </HBox>
+                  <HBox GridPane.rowIndex="2">
+                     <children>
+                        <Text layoutX="832.0" layoutY="537.0" strokeType="OUTSIDE" strokeWidth="0.0" text="服务时间：" />
+                        <Label fx:id="serviceTimeTip" layoutX="892.0" layoutY="525.0" text="请输入数字" textFill="#ee0303" visible="false" />
+                     </children>
+                  </HBox>
+                  <HBox>
+                     <children>
+                        <Text layoutX="839.0" layoutY="546.0" strokeType="OUTSIDE" strokeWidth="0.0" text="进程名：" />
+                        <Label fx:id="proNameTip" layoutX="887.0" layoutY="534.0" text="请输入进程名" textFill="#f50707" visible="false" />
+                     </children>
+                  </HBox>
                </children>
                <columnConstraints>
                   <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -145,7 +165,7 @@
             </GridPane>
          </content>
       </TitledPane>
-      <Button fx:id="pauseAndContinueButton" layoutX="805.0" layoutY="451.0" mnemonicParsing="false" text="暂停" />
+      <Button fx:id="pauseAndContinueButton" layoutX="805.0" layoutY="451.0" mnemonicParsing="false" onAction="#suspendAndContinue" text="暂停" />
       <Button fx:id="exitButoon" layoutX="902.0" layoutY="451.0" mnemonicParsing="false" text="退出" />
    </children>
 </AnchorPane>
