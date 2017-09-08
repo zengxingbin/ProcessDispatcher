@@ -98,10 +98,17 @@ public class PopupController {
             }
         }
         //judge what the schedulingStrategy is 
-        if("优先数调度".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+        if("优先数调度(HPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
             //if the strategy is round robin time,sort the readyQueue every time you add new process
-            dispatcher.getReadyQueue().sort(new PriorityComparator());
+            dispatcher.getReadyQueue().sort(new PriorityComparator(0));
+            System.out.println("来了");
             
+        }else if("最短进程优先(SPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+         // if the strategy is round robin time,sort the readyQueue according to the serviceTime every time you add new process
+            dispatcher.getReadyQueue().sort(new PriorityComparator(1));
+        }else if("最短剩余时间(SRT)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+            //sort the ready queue according to the remaining time;
+            dispatcher.getReadyQueue().sort(new PriorityComparator(2));
         }
         dispatcher.getPopupStage().close();
         dispatcher.getMainController().getReadyQueue().requestFocus();

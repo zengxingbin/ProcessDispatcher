@@ -205,7 +205,8 @@ public class MainController {
         schedulingStrategy.getItems().add("时间片轮转(RR)");
         schedulingStrategy.getItems().add("优先数调度(HPN)");
         schedulingStrategy.getItems().add("最短进程优先(SPN)");
-        schedulingStrategy.getItems().add("最短剩余时间(STR)");
+        schedulingStrategy.getItems().add("最短剩余时间(SRT)");
+        schedulingStrategy.getItems().add("先来先服务(FCFS)");
         isContention.setItems(FXCollections.observableArrayList());
         isContention.getItems().add("抢占");
         isContention.getItems().add("非抢占");
@@ -433,6 +434,8 @@ public class MainController {
                 dispatcher.getDispathThread().start();
                 dispatcher.setIsFirstThread(false);
             }else {
+                //clear the last finish queue
+                dispatcher.getFinishQueue().clear();
                 dispatcher.createNewDispatchThread();
                 dispatcher.getDispathThread().setDaemon(true);
                 dispatcher.getDispathThread().start();
@@ -567,11 +570,16 @@ public class MainController {
             dispatcher.getWaitQueue().add(process);
         }
         // judge what the schedulingStrategy is
-        if ("优先数调度".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
-            // if the strategy is round robin time,sort the readyQueue every
-            // time you add new process
-            dispatcher.getReadyQueue().sort(new PriorityComparator());
+        if ("优先数调度(HPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+            // if the strategy is round robin time,sort the readyQueue according to the priority every time you add new process
+            dispatcher.getReadyQueue().sort(new PriorityComparator(0));
 
+        }else if("最短进程优先(SPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+         // if the strategy is round robin time,sort the readyQueue according to the serviceTime every time you add new process
+            dispatcher.getReadyQueue().sort(new PriorityComparator(1));
+        }else if("最短剩余时间(SRT)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+            //sort the ready queue according to the remaining time;
+            dispatcher.getReadyQueue().sort(new PriorityComparator(2));
         }
     }
 

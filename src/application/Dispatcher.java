@@ -62,8 +62,8 @@ public class Dispatcher extends Application {
     private Thread dispathThread = new Thread(new DispatchRun());
     // record the last completed dispathThread to decide whether create a new
     // dispatch thread
-    //private Thread completedThread = null;
-    private boolean isFirstThread = true; 
+    // private Thread completedThread = null;
+    private boolean isFirstThread = true;
     // this thread is responsible for updating the readyQueue
     private Thread updateReadyQueue = new Thread(new Runnable() {
 
@@ -121,8 +121,10 @@ public class Dispatcher extends Application {
                 priorityNumDispatch();
                 break;
             case 2:
+                SPNDAndSRTDispatch();
                 break;
             case 3:
+                SPNDAndSRTDispatch();
                 break;
             }
 
@@ -171,7 +173,8 @@ public class Dispatcher extends Application {
                 // if the clearSignal is true,end the thread
                 if (clearSignal) {
                     clearSignal = false;
-                    
+                    // reset the processCounter
+                    processCounter = 0;
                     return;
                 }
                 // dispatch thread suspend
@@ -231,7 +234,7 @@ public class Dispatcher extends Application {
 
                         for (ProcessPCB process : finishQueue)
                             System.out.println(process);
-                        
+
                         break;
                     }
                 } else if (timeSlicing >= TIMESLICING) {// join in the
@@ -289,11 +292,13 @@ public class Dispatcher extends Application {
                 }
 
             }
+            // reset the processCounter
+            processCounter = 0;
             // rmove the last completed process from runningProcess table
             runningProcess.remove(0);
             // reset the hasStartDispatch value when the dispatch thread finish
             // hasStartDispatch = false;
-            
+
             // give a tip of finishing the dispatch
             JOptionPane.showMessageDialog(null, "所有进程调度完成！", "提示", JOptionPane.WARNING_MESSAGE);
         }
@@ -301,14 +306,15 @@ public class Dispatcher extends Application {
         public void priorityNumDispatch() {
             // System.out.println("优先数调度");
             // is the readyQueue empty
-            /*if (readyQueue.isEmpty()) {
-                System.out.println("There is no  process in ready queue! ");
-                JOptionPane.showMessageDialog(null, "就绪队列中无任何进程，请先创建一些进程！", "提示", JOptionPane.WARNING_MESSAGE);
-                return;
-            }*/
+            /*
+             * if (readyQueue.isEmpty()) {
+             * System.out.println("There is no  process in ready queue! ");
+             * JOptionPane.showMessageDialog(null, "就绪队列中无任何进程，请先创建一些进程！", "提示",
+             * JOptionPane.WARNING_MESSAGE); return; }
+             */
             // sort the readyQueue according to priority
 
-            readyQueue.sort(new PriorityComparator());
+            readyQueue.sort(new PriorityComparator(0));
 
             // run the first process which has highest priority
             // first process to be run
@@ -329,6 +335,8 @@ public class Dispatcher extends Application {
                     // if the clearSignal is true,end the thread
                     if (clearSignal) {
                         clearSignal = false;
+                        // reset the processCounter
+                        processCounter = 0;
                         return;
                     }
                     // dispatch thread suspend
@@ -412,14 +420,16 @@ public class Dispatcher extends Application {
                             // currentTime = System.currentTimeMillis() / 1000;
                             // process.setStartTime((int) currentTime - (int)
                             // startTime);
-                            process.setStartTime(timeCounter);
-                            process.setFirstTime(false);
-                            process.setHasRun(true);
+                            if (process.isFirstTime()) {
+                                process.setStartTime(timeCounter);
+                                process.setFirstTime(false);
+                                process.setHasRun(true);
+                            }
                         }
                     }
                 }
             } else {
-                System.out.println("抢占算法");
+                // System.out.println("抢占算法");
                 // run the first process which has highest priority
                 // first process to be run
 
@@ -437,6 +447,8 @@ public class Dispatcher extends Application {
                     // if the clearSignal is true,end the thread
                     if (clearSignal) {
                         clearSignal = false;
+                        // reset the processCounter
+                        processCounter = 0;
                         return;
                     }
                     // dispatch thread suspend
@@ -492,6 +504,8 @@ public class Dispatcher extends Application {
                             // print the finishQueue
                             for (ProcessPCB process : finishQueue)
                                 System.out.println(process);
+                            // reset the processCounter
+                            processCounter = 0;
                             break;
                         } else {
                             // if current process finish,run next process which
@@ -501,41 +515,197 @@ public class Dispatcher extends Application {
                             process = readyQueue.remove(0);
 
                             // currentTime = System.currentTimeMillis() / 1000;
-                            process.setStartTime(timeCounter);
-                            process.setFirstTime(false);
-                            process.setHasRun(true);
+                            if (process.isFirstTime()) {
+                                process.setStartTime(timeCounter);
+                                process.setFirstTime(false);
+                                process.setHasRun(true);
+                            }
                         }
                     } else {
                         // if there is process which has higher priority in
                         // ready queue,then run it,or continue running the
                         // current process
                         if (!readyQueue.isEmpty()) {
-                            ProcessPCB process2 = readyQueue.get(0);// the last
-                                                                    // process
-                                                                    // in ready
-                                                                    // queue has
-                                                                    // highest
-                                                                    // priority
+                            /*
+                             * the last process in ready queue has highest
+                             * priority
+                             */
+                            ProcessPCB process2 = readyQueue.get(0);
                             if (process2.getPriority() > process.getPriority()) {
                                 // current running process' prioirty decrease
                                 process.setPriority(process.getPriority() - 1);
+                                //add current running process to the ready queue
+                                readyQueue.add(process);
                                 readyQueue.remove(process2);
                                 process = process2;
+                                if (process.isFirstTime()) {
+                                    process.setStartTime(timeCounter);
+                                    process.setFirstTime(false);
+                                    process.setHasRun(true);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // reset the processCounter
+            processCounter = 0;
+            // remove the last running process
+            runningProcess.remove(0);
+
+            JOptionPane.showMessageDialog(null, "所有进程调度完成！", "提示", JOptionPane.WARNING_MESSAGE);
+        }
+
+        /**
+         * shortest process next(SPN)
+         * 
+         */
+        public void SPNDAndSRTDispatch() {
+
+            // run the first process which has highest priority
+            // first process to be run
+            if (!isContention) {
+                readyQueue.sort(new PriorityComparator(1));
+            } else {
+                readyQueue.sort(new PriorityComparator(2));
+            }
+            // process = readyQueue.removeLast();
+            process = readyQueue.remove(0);
+
+            /*
+             * startTime = System.currentTimeMillis() / 1000; currentTime =
+             * startTime;
+             */
+            // add to the running process
+            runningProcess.add(process);
+            process.setStartTime(timeCounter);
+            process.setHasRun(true);
+            process.setFirstTime(false);
+            while (true) {
+                // if the clearSignal is true,end the thread
+                if (clearSignal) {
+                    clearSignal = false;
+                    // reset the processCounter
+                    processCounter = 0;
+                    return;
+                }
+                // dispatch thread suspend
+                while (needWait) {
+                    try {
+                        Thread.currentThread().sleep(100);
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+                process.setStatus(1);// 1 represents running
+                process.setRunTime(process.getRunTime() + 1);
+                process.setRemainingTime(process.getRemainingTime() - 1);
+                System.out.println("**Currnet running process:" + process + "**");
+                runningProcess.remove(0);
+                try {
+                    process = (ProcessPCB) process.clone();
+                    runningProcess.add(process);
+                } catch (CloneNotSupportedException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                }
+                // current process run for one second in every circle
+                try {
+                    Thread.currentThread().sleep(1000);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                // increase the timeCounter
+                timeCounter++;
+                // other process wait for the currnet process to finish
+                for (ProcessPCB process : readyQueue)
+                    process.setWaitTime(process.getWaitTime() + 1);
+                if (process.getRemainingTime() == 0) {
+                    // currentTime = System.currentTimeMillis() / 1000;
+                    // set the end time of process
+                    // process.setEndTime((int) (currentTime - startTime));
+                    process.setEndTime(timeCounter);
+                    // compute the turnaround time
+                    process.setTurnaroundTime(process.getWaitTime() + process.getServiceTime());
+                    // compute the normalized turnaround time
+                    process.setNormalizedTurnaroundTime(
+                            (double) process.getTurnaroundTime() / process.getServiceTime());
+                    // change the status of process:finish
+                    process.setStatus(2);// represents process completed
+                    // join to the finishQueue
+                    // finishQueue.addFirst(process);
+                    finishQueue.add(process);
+                    process.setFinish(true);
+                    // process = null;
+                    if (readyQueue.isEmpty()) {
+                        /*
+                         * process = null; System.out.
+                         * println("--All processes have been completed!--" );
+                         * // print the finishQueue for (ProcessPCB process :
+                         * finishQueue) System.out.println(process); break;
+                         */
+                        /*
+                         * while (readyQueue.isEmpty()) System.out.
+                         * println("wait the process added to the ready queue"
+                         * ); try { Thread.currentThread().sleep(1000); } catch
+                         * (InterruptedException e) { // TODO Auto-generated
+                         * catch block e.printStackTrace(); }
+                         */
+                        System.out.println("--All processes have been completed!--");
+                        // print the finishQueue
+                        for (ProcessPCB process : finishQueue)
+                            System.out.println(process);
+                        break;
+                    } else {
+                        // if current process finish,run next process which has
+                        // highest priority
+                        process = readyQueue.remove(0);
+
+                        // currentTime = System.currentTimeMillis() / 1000;
+                        // process.setStartTime((int) currentTime - (int)
+                        // startTime);
+                        if (process.isFirstTime()) {
+                            process.setStartTime(timeCounter);
+                            process.setFirstTime(false);
+                            process.setHasRun(true);
+                        }
+                    }
+                } else if (isContention) {
+                    /*
+                     * get the process which has shortest remaining time from
+                     * ready queue then compare it to the current running
+                     * process
+                     */
+                    if (!readyQueue.isEmpty()) {
+                        ProcessPCB process2 = readyQueue.get(0);
+                        if (process2.getRemainingTime() < process.getRemainingTime()) {
+                            // remove the process which has shortest remaining
+                            // time
+                            // from the ready queue
+                            //add current running process to the ready queue
+                            readyQueue.add(process);
+                            readyQueue.remove(process2);
+                            process = process2;
+                            if (process.isFirstTime()) {
                                 process.setStartTime(timeCounter);
                                 process.setFirstTime(false);
                                 process.setHasRun(true);
                             }
                         }
                     }
+
                 }
             }
 
+            // reset the processCounter
+            processCounter = 0;
             // remove the last running process
             runningProcess.remove(0);
-            
+
             JOptionPane.showMessageDialog(null, "所有进程调度完成！", "提示", JOptionPane.WARNING_MESSAGE);
         }
-
     }
 
     public Dispatcher() {
@@ -782,5 +952,5 @@ public class Dispatcher extends Application {
     public void setIsFirstThread(boolean siFirstThread) {
         this.isFirstThread = siFirstThread;
     }
-    
+
 }

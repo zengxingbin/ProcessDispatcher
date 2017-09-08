@@ -54,7 +54,7 @@ public class Dispatcher {
                         
                         if(choice == 2) {//priority number dispatch and it's preemptive 
                             //restart sorting the ready queue according to the priority every thime you add new process to the ready queue
-                            readyQueue.sort(new PriorityComparator());
+                            readyQueue.sort(new PriorityComparator(0));
                            
                         }
                     }
@@ -196,7 +196,7 @@ public class Dispatcher {
         }
         // sort the readyQueue according to priority
         synchronized (LOCK) {
-            readyQueue.sort(new PriorityComparator());
+            readyQueue.sort(new PriorityComparator(0));
         }
         // judge if is contention
         if (!isContention) {
