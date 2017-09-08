@@ -8,7 +8,7 @@ public class PriorityComparator implements Comparator<ProcessPCB> {
 
     @Override
     public int compare(ProcessPCB pro1, ProcessPCB pro2) {
-        return pro1.getPriority() - pro2.getPriority();
+        return pro2.getPriority() - pro1.getPriority();
     }
 
 }

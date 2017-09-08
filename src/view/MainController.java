@@ -1,5 +1,7 @@
 package view;
 
+import java.sql.Time;
+
 import javax.swing.JOptionPane;
 
 import application.Dispatcher;
@@ -16,6 +18,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import model.ProcessPCB;
+import util.PriorityComparator;
 
 public class MainController {
     private Dispatcher dispatcher;
@@ -159,10 +162,11 @@ public class MainController {
     private Button exitButoon;
     // jude the if the dispatcher button has been clidked
     private boolean isClicked;
-    //sure whether reset
+    // sure whether reset
     private boolean sureReset;
-    //sure whether exit
+    // sure whether exit
     private boolean sureExit;
+
     /**
      * this method will be auto-called after the construction to set the some
      * initial data
@@ -198,10 +202,10 @@ public class MainController {
          */
         // initialize the ComboBox
         schedulingStrategy.setItems(FXCollections.observableArrayList());
-        schedulingStrategy.getItems().add("时间片轮转");
-        schedulingStrategy.getItems().add("优先数调度");
-        schedulingStrategy.getItems().add("最短进程优先");
-        schedulingStrategy.getItems().add("最短剩余时间");
+        schedulingStrategy.getItems().add("时间片轮转(RR)");
+        schedulingStrategy.getItems().add("优先数调度(HPN)");
+        schedulingStrategy.getItems().add("最短进程优先(SPN)");
+        schedulingStrategy.getItems().add("最短剩余时间(STR)");
         isContention.setItems(FXCollections.observableArrayList());
         isContention.getItems().add("抢占");
         isContention.getItems().add("非抢占");
@@ -362,14 +366,16 @@ public class MainController {
             JOptionPane.showMessageDialog(null, "就绪队列中无任何进程，请先创建一些进程！", "提示", JOptionPane.WARNING_MESSAGE);
             return;
         }
+
+
         // gain the scheduling strategy
         String scheduleModel = schedulingStrategy.getValue();
         // gain the contention strategy
         String contention = isContention.getValue();
         if (scheduleModel == null) {
             // default scheduleModel
-            scheduleModel = "时间片轮转";
-            schedulingStrategy.setValue("时间片轮转");
+            scheduleModel = "时间片轮转(RR)";
+            schedulingStrategy.setValue("时间片轮转(RR)");
         }
         // set the default contention strategy
         if (contention == null) {
@@ -377,21 +383,22 @@ public class MainController {
             isContention.setValue("非抢占");
         }
         // set the scheduling strategy in dispatcher
-        if ("时间片轮转".equals(scheduleModel)) {
+        if ("时间片轮转(RR)".equals(scheduleModel)) {
             isContention.setValue("抢占");
             dispatcher.setContention(false);
             dispatcher.setSchedulingStrategy(0);
-        } else if ("优先级调度".equals(scheduleModel)) {
+
+        } else if ("优先数调度(HPN)".equals(scheduleModel)) {
             if ("非抢占".equals(contention))
                 dispatcher.setContention(false);
             else
                 dispatcher.setContention(true);
             dispatcher.setSchedulingStrategy(1);
-        } else if ("最短进程优先".equals(scheduleModel)) {
+        } else if ("最短进程优先(SPN)".equals(scheduleModel)) {
             isContention.setValue("非抢占");
             dispatcher.setContention(false);
             dispatcher.setSchedulingStrategy(2);
-        } else if ("最短剩余时间".equals(scheduleModel)) {
+        } else if ("最短剩余时间(SRT)".equals(scheduleModel)) {
             isContention.setValue("抢占");
             dispatcher.setContention(true);
             dispatcher.setSchedulingStrategy(3);
@@ -422,11 +429,15 @@ public class MainController {
              * don't understand
              */
 
-            if (dispatcher.getDispathThread() == dispatcher.getCompletedThread())
+            if (dispatcher.iSFirstThread()) {
+                dispatcher.getDispathThread().start();
+                dispatcher.setIsFirstThread(false);
+            }else {
                 dispatcher.createNewDispatchThread();
-            dispatcher.getDispathThread().setDaemon(true);
-            dispatcher.getDispathThread().start();
-
+                dispatcher.getDispathThread().setDaemon(true);
+                dispatcher.getDispathThread().start();
+            }
+                
         } else {
             if ("继续".equals(pauseAndContinueButton.getText())) {
                 pauseAndContinueButton.setText("暂停");
@@ -456,15 +467,15 @@ public class MainController {
          * dispatcher.getRunningProcess().clear(); break; } } } });
          * clearThread.start();
          */
-        
-        //at the begining,sure the value of sureRest is false
+
+        // at the begining,sure the value of sureRest is false
         sureReset = false;
         if (dispatcher.getDispathThread().isAlive()) {
-            //suspend the dispatch thread when the tip view appear
+            // suspend the dispatch thread when the tip view appear
             dispatcher.setNeedWait(true);
             dispatcher.getWarnController().getText().setText("进程正在执行，确认要重置吗？");
             dispatcher.getWarnStage().showAndWait();
-            if(!sureReset)
+            if (!sureReset)
                 return;
             // send the clear signal to clear all the list
             dispatcher.setClearSignal(true);
@@ -536,20 +547,31 @@ public class MainController {
         // when the dispatchThread does't start or it finish,reset the start
         // time and current time
         if (!dispatcher.getDispathThread().isAlive()) {
-            dispatcher.setStartTime(System.currentTimeMillis() / 1000);
-            dispatcher.setCurrentTime(dispatcher.getStartTime());
+            /*
+             * dispatcher.setStartTime(System.currentTimeMillis() / 1000);
+             * dispatcher.setCurrentTime(dispatcher.getStartTime());
+             */
+            dispatcher.setTimeCounter(0);
         }
         process.setFirstTime(true);
         process.setRemainingTime(process.getServiceTime());
         if (dispatcher.getReadyQueue().size() < dispatcher.getProcessmaxnum()) {
-            process.setArrivalTime((int) (dispatcher.getCurrentTime() - dispatcher.getStartTime()));
+            process.setArrivalTime(dispatcher.getTimeCounter());
             // record current time
-            dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
+            // dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
             // join in the readyQueue
             dispatcher.getReadyQueue().add(process);
+
         } else {
             // join int the wait queue
             dispatcher.getWaitQueue().add(process);
+        }
+        // judge what the schedulingStrategy is
+        if ("优先数调度".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+            // if the strategy is round robin time,sort the readyQueue every
+            // time you add new process
+            dispatcher.getReadyQueue().sort(new PriorityComparator());
+
         }
     }
 
@@ -591,21 +613,23 @@ public class MainController {
         dispatcher.getPopupController().getInputTip().setText("   请输入随机进程个数:");
         dispatcher.getPopupStage().showAndWait();
     }
+
     @FXML
     public void exit() {
-        if(dispatcher.getDispathThread().isAlive()) {
-            //suspend the dispatch thread when the tip view appear
-          //suspend the dispatch thread when the tip view appear
+        if (dispatcher.getDispathThread().isAlive()) {
+            // suspend the dispatch thread when the tip view appear
+            // suspend the dispatch thread when the tip view appear
             dispatcher.setNeedWait(true);
             dispatcher.setNeedWait(true);
             dispatcher.getWarnController().getText().setText("进程正在执行，确认要退出吗？");
             dispatcher.getWarnStage().showAndWait();
-            if(!sureExit)
+            if (!sureExit)
                 return;
         }
         dispatcher.getMainStage().close();
-            
+
     }
+
     public void setDispatcher(Dispatcher dispatcher) {
         this.dispatcher = dispatcher;
     }
@@ -629,5 +653,21 @@ public class MainController {
     public void setSureExit(boolean sureExit) {
         this.sureExit = sureExit;
     }
-    
+
+    public ComboBox<String> getSchedulingStrategy() {
+        return schedulingStrategy;
+    }
+
+    public void setSchedulingStrategy(ComboBox<String> schedulingStrategy) {
+        this.schedulingStrategy = schedulingStrategy;
+    }
+
+    public ComboBox<String> getIsContention() {
+        return isContention;
+    }
+
+    public void setIsContention(ComboBox<String> isContention) {
+        this.isContention = isContention;
+    }
+
 }

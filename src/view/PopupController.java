@@ -11,6 +11,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import model.ProcessPCB;
+import util.PriorityComparator;
 
 public class PopupController {
     @FXML
@@ -95,6 +96,12 @@ public class PopupController {
                 //join in the wait queue
                 dispatcher.getWaitQueue().add(process);
             }
+        }
+        //judge what the schedulingStrategy is 
+        if("优先数调度".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+            //if the strategy is round robin time,sort the readyQueue every time you add new process
+            dispatcher.getReadyQueue().sort(new PriorityComparator());
+            
         }
         dispatcher.getPopupStage().close();
         dispatcher.getMainController().getReadyQueue().requestFocus();
