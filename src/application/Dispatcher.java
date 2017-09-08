@@ -39,6 +39,7 @@ public class Dispatcher extends Application {
     private WarningController warnController;
     // ready queue
     private ObservableList<ProcessPCB> readyQueue = FXCollections.observableArrayList();
+    //
     // wait queue
     private ObservableList<ProcessPCB> waitQueue = FXCollections.observableArrayList();
     // finish queue
