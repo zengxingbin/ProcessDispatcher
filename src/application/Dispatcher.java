@@ -2,8 +2,11 @@ package application;
 
 import java.io.IOException;
 import java.util.LinkedList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.swing.JOptionPane;
+import javax.swing.plaf.synth.SynthSpinnerUI;
+
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -11,6 +14,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.stage.Stage;
 import model.ProcessPCB;
 import util.PriorityComparator;
+import util.Queue;
 import view.MainController;
 import view.PopupController;
 import view.WarningController;
@@ -39,7 +43,13 @@ public class Dispatcher extends Application {
     private WarningController warnController;
     // ready queue
     private ObservableList<ProcessPCB> readyQueue = FXCollections.observableArrayList();
-    //
+    /*this queue Synchronize with the readyQueue,
+     aim to replace the readyQueue to sort processes 
+     in order to  gain the next running process from readyQueue
+     instead of operate the readyQueue directly which will change
+     the order of processes in readyQueue
+     */
+    private ObservableList<ProcessPCB> synchronizeReadyQueue = FXCollections.observableArrayList();
     // wait queue
     private ObservableList<ProcessPCB> waitQueue = FXCollections.observableArrayList();
     // finish queue
@@ -87,6 +97,13 @@ public class Dispatcher extends Application {
             }
         }
     });
+    /*if allowed to add new process to the reaydQueue
+     * when the current running process has't run for a unit of time(that is 1)
+     * it is not allowed to add new process to the ready queue util the
+     * current running process has't run for a unit of time(that is 1)
+     * in order to make sure the time is right
+     */
+    private boolean isAllowdAdd;
     // create some signal to realize the communication among threads
     // signal for updating the ready queue
     private boolean removeSignal;// signal for removing process
@@ -178,7 +195,7 @@ public class Dispatcher extends Application {
                     processCounter = 0;
                     return;
                 }
-                // dispatch thread suspend
+                /*// dispatch thread suspend
                 while (needWait) {
                     try {
                         Thread.currentThread().sleep(100);
@@ -186,7 +203,12 @@ public class Dispatcher extends Application {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
                     }
-                }
+                }*/
+                /*when current process has't run for a competed a unit of time
+                 *it is not allowed to add new process to the reayd queue in order 
+                 *to make sure the time is right
+                 */
+                isAllowdAdd = false;
                 process.setStatus(1);// 1 represents running
                 process.setRunTime(process.getRunTime() + 1);
                 process.setRemainingTime(process.getRemainingTime() - 1);
@@ -212,6 +234,19 @@ public class Dispatcher extends Application {
                 // increase the time counter
                 timeCounter++;
                 timeSlicing++;
+                // other process wait for the time slicing
+                for (ProcessPCB process : readyQueue)
+                    process.setWaitTime(process.getWaitTime() + 1);
+                isAllowdAdd = true;//allow to add process to the ready queue from now on at another thread
+                // dispatch thread suspend
+                while (needWait) {
+                    try {
+                        Thread.currentThread().sleep(100);
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
                 // if process finish
                 if (process.getRemainingTime() == 0) {
                     // currentTime = System.currentTimeMillis() / 1000;
@@ -272,12 +307,12 @@ public class Dispatcher extends Application {
                          * (InterruptedException e) { e.printStackTrace(); }
                          * if(!removeSignal) break; }
                          */
-                        // other process wait for the time slicing
-                        for (ProcessPCB process : readyQueue)
-                            process.setWaitTime(process.getWaitTime() + 1);
                         // waitSignal = true;//send waitSignal to the
                         // updateReadyQueueThread
                         // record the first time to start
+                     /*// other process wait for the time slicing
+                        for (ProcessPCB process : readyQueue)
+                            process.setWaitTime(process.getWaitTime() + 1);*/
                         if (process.isFirstTime()) {
                             // currentTime = System.currentTimeMillis() / 1000;
                             // process.setStartTime((int) (currentTime -
@@ -314,15 +349,18 @@ public class Dispatcher extends Application {
              * JOptionPane.WARNING_MESSAGE); return; }
              */
             // sort the readyQueue according to priority
-
-            readyQueue.sort(new PriorityComparator(0));
-
+            //readyQueue.sort(new PriorityComparator(0));
+            // sort the synchronizedReadyQueue according to the priority
+            synchronizeReadyQueue.sort(new PriorityComparator(0));
+            if(!isContention) {
             // run the first process which has highest priority
             // first process to be run
-            if (!isContention) {
                 // process = readyQueue.removeLast();
-                process = readyQueue.remove(0);
-
+                //process = readyQueue.remove(0);
+              //from the synchronizedReadyQueue get the first running process
+                process = synchronizeReadyQueue.remove(0);
+                //synchronized to the real readyQueue
+                readyQueue.remove(process);
                 /*
                  * startTime = System.currentTimeMillis() / 1000; currentTime =
                  * startTime;
@@ -340,7 +378,7 @@ public class Dispatcher extends Application {
                         processCounter = 0;
                         return;
                     }
-                    // dispatch thread suspend
+                    /*// dispatch thread suspend
                     while (needWait) {
                         try {
                             Thread.currentThread().sleep(100);
@@ -348,7 +386,8 @@ public class Dispatcher extends Application {
                             // TODO Auto-generated catch block
                             e.printStackTrace();
                         }
-                    }
+                    }*/
+                    isAllowdAdd = false;
                     process.setStatus(1);// 1 represents running
                     process.setRunTime(process.getRunTime() + 1);
                     process.setRemainingTime(process.getRemainingTime() - 1);
@@ -373,6 +412,19 @@ public class Dispatcher extends Application {
                     // other process wait for the currnet process to finish
                     for (ProcessPCB process : readyQueue)
                         process.setWaitTime(process.getWaitTime() + 1);
+                    isAllowdAdd = true;
+                    // dispatch thread suspend
+                    while (needWait) {
+                        try {
+                            Thread.currentThread().sleep(100);
+                        } catch (InterruptedException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                    }
+                    //synchronize with the readyQueue
+                    /*for(ProcessPCB process : synchronizeReadyQueue)
+                        process.setWaitTime(process.getWaitTime() + 1);*/
                     if (process.getRemainingTime() == 0) {
                         // currentTime = System.currentTimeMillis() / 1000;
                         // set the end time of process
@@ -412,12 +464,11 @@ public class Dispatcher extends Application {
 
                             break;
                         } else {
-                            // if current process finish,run next process which
-                            // has
-                            // highest priority
-
-                            process = readyQueue.remove(0);
-
+                            // if current process finish,run next process which has highest priority
+                            //process = readyQueue.remove(0);
+                            process = synchronizeReadyQueue.remove(0);
+                            //synchronize with the synchronizeReadyQueue
+                            readyQueue.remove(process);
                             // currentTime = System.currentTimeMillis() / 1000;
                             // process.setStartTime((int) currentTime - (int)
                             // startTime);
@@ -429,17 +480,18 @@ public class Dispatcher extends Application {
                         }
                     }
                 }
-            } else {
+            }else {
                 // System.out.println("ÇÀÕ¼Ëã·¨");
                 // run the first process which has highest priority
                 // first process to be run
-
-                process = readyQueue.remove(0);
-
-                /*
-                 * startTime = System.currentTimeMillis() / 1000; currentTime =
-                 * startTime;
-                 */
+                
+                //process = readyQueue.remove(0);
+                process = synchronizeReadyQueue.remove(0);
+                readyQueue.remove(process);
+                
+                 /* startTime = System.currentTimeMillis() / 1000; currentTime =
+                  startTime;*/
+                 
                 runningProcess.add(process);
                 process.setStartTime(timeCounter);
                 process.setHasRun(true);
@@ -452,7 +504,12 @@ public class Dispatcher extends Application {
                         processCounter = 0;
                         return;
                     }
-                    // dispatch thread suspend
+                    isAllowdAdd = false;
+                    process.setStatus(1);// 1 represents running
+                    process.setRunTime(process.getRunTime() + 1);
+                    process.setRemainingTime(process.getRemainingTime() - 1);
+                    System.out.println("**Currnet running process:" + process + "**");
+                    /*// dispatch thread suspend
                     while (needWait) {
                         try {
                             Thread.currentThread().sleep(100);
@@ -460,11 +517,7 @@ public class Dispatcher extends Application {
                             // TODO Auto-generated catch block
                             e.printStackTrace();
                         }
-                    }
-                    process.setStatus(1);// 1 represents running
-                    process.setRunTime(process.getRunTime() + 1);
-                    process.setRemainingTime(process.getRemainingTime() - 1);
-                    System.out.println("**Currnet running process:" + process + "**");
+                    }*/
                     runningProcess.remove(0);
                     try {
                         process = (ProcessPCB) process.clone();
@@ -480,11 +533,23 @@ public class Dispatcher extends Application {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
                     }
-                    // increase the timeCounter
-                    timeCounter++;
                     // other process wait for the currnet process to finish
                     for (ProcessPCB process : readyQueue)
                         process.setWaitTime(process.getWaitTime() + 1);
+                    // increase the timeCounter
+                    timeCounter++;
+                    isAllowdAdd = true;
+                    // dispatch thread suspend
+                    while (needWait) {
+                        try {
+                            Thread.currentThread().sleep(100);
+                        } catch (InterruptedException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                    }
+                    /*for(ProcessPCB process : synchronizeReadyQueue)
+                        process.setWaitTime(process.getWaitTime() + 1);*/
                     if (process.getRemainingTime() == 0) {
                         // currentTime = System.currentTimeMillis() / 1000;
                         // set the end time of process
@@ -512,8 +577,10 @@ public class Dispatcher extends Application {
                             // if current process finish,run next process which
                             // has
                             // highest priority
-
-                            process = readyQueue.remove(0);
+                            
+                            //process = readyQueue.remove(0);
+                            process = synchronizeReadyQueue.remove(0);
+                            readyQueue.remove(process);
 
                             // currentTime = System.currentTimeMillis() / 1000;
                             if (process.isFirstTime()) {
@@ -522,21 +589,25 @@ public class Dispatcher extends Application {
                                 process.setHasRun(true);
                             }
                         }
-                    } else {
+                    } else if(isContention){
                         // if there is process which has higher priority in
                         // ready queue,then run it,or continue running the
                         // current process
                         if (!readyQueue.isEmpty()) {
-                            /*
-                             * the last process in ready queue has highest
-                             * priority
-                             */
-                            ProcessPCB process2 = readyQueue.get(0);
+                            
+                             /* the last process in ready queue has highest
+                              priority*/
+                             
+                            //ProcessPCB process2 = readyQueue.get(0);
+                            ProcessPCB process2 = synchronizeReadyQueue.get(0);
                             if (process2.getPriority() > process.getPriority()) {
                                 // current running process' prioirty decrease
                                 process.setPriority(process.getPriority() - 1);
                                 //add current running process to the ready queue
                                 readyQueue.add(process);
+                                synchronizeReadyQueue.add(process);
+                                synchronizeReadyQueue.sort(new PriorityComparator(0));
+                                synchronizeReadyQueue.remove(0);
                                 readyQueue.remove(process2);
                                 process = process2;
                                 if (process.isFirstTime()) {
@@ -566,12 +637,17 @@ public class Dispatcher extends Application {
             // run the first process which has highest priority
             // first process to be run
             if (!isContention) {
-                readyQueue.sort(new PriorityComparator(1));
+                //readyQueue.sort(new PriorityComparator(1));
+                synchronizeReadyQueue.sort(new PriorityComparator(1));
+                
             } else {
-                readyQueue.sort(new PriorityComparator(2));
+                //readyQueue.sort(new PriorityComparator(2));
+                synchronizeReadyQueue.sort(new PriorityComparator(2));
             }
             // process = readyQueue.removeLast();
-            process = readyQueue.remove(0);
+            //process = readyQueue.remove(0);
+            process = synchronizeReadyQueue.remove(0);
+            readyQueue.remove(process);
 
             /*
              * startTime = System.currentTimeMillis() / 1000; currentTime =
@@ -590,7 +666,12 @@ public class Dispatcher extends Application {
                     processCounter = 0;
                     return;
                 }
-                // dispatch thread suspend
+                isAllowdAdd = false;
+                process.setStatus(1);// 1 represents running
+                process.setRunTime(process.getRunTime() + 1);
+                process.setRemainingTime(process.getRemainingTime() - 1);
+                System.out.println("**Currnet running process:" + process + "**");
+                /*// dispatch thread suspend
                 while (needWait) {
                     try {
                         Thread.currentThread().sleep(100);
@@ -598,11 +679,7 @@ public class Dispatcher extends Application {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
                     }
-                }
-                process.setStatus(1);// 1 represents running
-                process.setRunTime(process.getRunTime() + 1);
-                process.setRemainingTime(process.getRemainingTime() - 1);
-                System.out.println("**Currnet running process:" + process + "**");
+                }*/
                 runningProcess.remove(0);
                 try {
                     process = (ProcessPCB) process.clone();
@@ -623,6 +700,18 @@ public class Dispatcher extends Application {
                 // other process wait for the currnet process to finish
                 for (ProcessPCB process : readyQueue)
                     process.setWaitTime(process.getWaitTime() + 1);
+                isAllowdAdd = true;
+                // dispatch thread suspend
+                while (needWait) {
+                    try {
+                        Thread.currentThread().sleep(100);
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+                /*for(ProcessPCB process : synchronizeReadyQueue)
+                    process.setWaitTime(process.getWaitTime() + 1);*/
                 if (process.getRemainingTime() == 0) {
                     // currentTime = System.currentTimeMillis() / 1000;
                     // set the end time of process
@@ -662,8 +751,9 @@ public class Dispatcher extends Application {
                     } else {
                         // if current process finish,run next process which has
                         // highest priority
-                        process = readyQueue.remove(0);
-
+                        //process = readyQueue.remove(0);
+                        process = synchronizeReadyQueue.remove(0);
+                        readyQueue.remove(process);
                         // currentTime = System.currentTimeMillis() / 1000;
                         // process.setStartTime((int) currentTime - (int)
                         // startTime);
@@ -673,21 +763,25 @@ public class Dispatcher extends Application {
                             process.setHasRun(true);
                         }
                     }
-                } else if (isContention) {
+                } else if(isContention) {
                     /*
                      * get the process which has shortest remaining time from
                      * ready queue then compare it to the current running
                      * process
                      */
                     if (!readyQueue.isEmpty()) {
-                        ProcessPCB process2 = readyQueue.get(0);
+                        //ProcessPCB process2 = readyQueue.get(0);
+                        ProcessPCB process2 = synchronizeReadyQueue.get(0);
                         if (process2.getRemainingTime() < process.getRemainingTime()) {
                             // remove the process which has shortest remaining
                             // time
                             // from the ready queue
                             //add current running process to the ready queue
                             readyQueue.add(process);
+                            synchronizeReadyQueue.add(process);
+                            synchronizeReadyQueue.sort(new PriorityComparator(2));
                             readyQueue.remove(process2);
+                            synchronizeReadyQueue.remove(0);
                             process = process2;
                             if (process.isFirstTime()) {
                                 process.setStartTime(timeCounter);
@@ -954,4 +1048,16 @@ public class Dispatcher extends Application {
         this.isFirstThread = siFirstThread;
     }
 
+    public ObservableList<ProcessPCB> getSynchronizeReadyQueue() {
+        return synchronizeReadyQueue;
+    }
+
+    public boolean isAllowdAdd() {
+        return isAllowdAdd;
+    }
+
+    public void setAllowdAdd(boolean isAllowdAdd) {
+        this.isAllowdAdd = isAllowdAdd;
+    }
+    
 }

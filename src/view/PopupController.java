@@ -25,7 +25,8 @@ public class PopupController {
     @FXML
     private Button cancelButton;
     private Dispatcher dispatcher;
-
+    //judge the if popup pop up for the first time
+    private boolean isFirstPopup = true;
     @FXML
     private void initialize() {
         // add focus listener to the initProNum textfield
@@ -88,28 +89,56 @@ public class PopupController {
             // join in the readyQueue
             if (dispatcher.getReadyQueue().size() < dispatcher.getProcessmaxnum()) {
                 //process.setArrivalTime((int) (dispatcher.getCurrentTime() - dispatcher.getStartTime()));
+                if(!isFirstPopup && dispatcher.getDispathThread().isAlive()) {
+                    int count = 0;
+                    while(!dispatcher.isAllowdAdd()) {
+                        //avoid current thread to wait all the time 
+                          if(count >= 2000)
+                              break;
+                          try {
+                              Thread.currentThread().sleep(100);
+                          } catch (InterruptedException e) {
+                              // TODO Auto-generated catch block
+                              e.printStackTrace();
+                          }
+                          count += 100;
+                      }
+                }else {
+                    isFirstPopup = false;
+                }
+                
                 process.setArrivalTime(dispatcher.getTimeCounter());
                 // record current time
                 //dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
                 dispatcher.getReadyQueue().add(process);
+                // add to the synchronized queue at the same time
+                dispatcher.getSynchronizeReadyQueue().add(process);
+                if(dispatcher.getDispathThread().isAlive()) {
+                    //judge what the schedulingStrategy is 
+                    if("优先数调度(HPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                        //if the strategy is round robin time,sort the readyQueue every time you add new process
+                        //dispatcher.getReadyQueue().sort(new PriorityComparator(0));
+                      //if the strategy is round robin time,sort the synchronizedreadyQueue every time you add new process
+                        dispatcher.getSynchronizeReadyQueue().sort(new PriorityComparator(0));
+                        
+                    }else if("最短进程优先(SPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                     // if the strategy is round robin time,sort the readyQueue according to the serviceTime every time you add new process
+                        //dispatcher.getReadyQueue().sort(new PriorityComparator(1));
+                     // if the strategy is round robin time,sort the synchronizedreadyQueue according to the serviceTime every time you add new process
+                        dispatcher.getSynchronizeReadyQueue().sort(new PriorityComparator(1));
+                    }else if("最短剩余时间(SRT)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                        //sort the ready queue according to the remaining time;
+                        //dispatcher.getReadyQueue().sort(new PriorityComparator(2));
+                        //sort the ready queue according to the remaining time;
+                        dispatcher.getSynchronizeReadyQueue().sort(new PriorityComparator(2));
+                    }
+                }
             }else {
                 //join in the wait queue
                 dispatcher.getWaitQueue().add(process);
             }
         }
-        //judge what the schedulingStrategy is 
-        if("优先数调度(HPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
-            //if the strategy is round robin time,sort the readyQueue every time you add new process
-            dispatcher.getReadyQueue().sort(new PriorityComparator(0));
-            System.out.println("来了");
-            
-        }else if("最短进程优先(SPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
-         // if the strategy is round robin time,sort the readyQueue according to the serviceTime every time you add new process
-            dispatcher.getReadyQueue().sort(new PriorityComparator(1));
-        }else if("最短剩余时间(SRT)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
-            //sort the ready queue according to the remaining time;
-            dispatcher.getReadyQueue().sort(new PriorityComparator(2));
-        }
+       
         dispatcher.getPopupStage().close();
         dispatcher.getMainController().getReadyQueue().requestFocus();
         // dispatcher.getMainController().getReadyQueue().getSelectionModel().select(0);
