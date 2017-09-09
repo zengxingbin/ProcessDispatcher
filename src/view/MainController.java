@@ -515,6 +515,11 @@ public class MainController {
         dispatcher.setProcessCounter(0);
         dispatcher.setTotalServiceTime(0);
         dispatcher.setProgress(0);
+        if("¼ÌÐø".equals(pauseAndContinueButton.getText())) {
+            pauseAndContinueButton.setText("ÔÝÍ£");
+        }
+        addButton.setDisable(false);
+        randomGenButton.setDisable(false);
     }
 
     /**
@@ -658,10 +663,17 @@ public class MainController {
         // System.out.println(dispatcher.getUpdateReadyQueue().isAlive());
         if (dispatcher.getDispathThread().isAlive()) {
             if ("ÔÝÍ£".equals(text)) {
+                //you can't add new process by any way when the dispatcher pasue
+                //so the add button should be disabled
+                addButton.setDisable(true);
+                randomGenButton.setDisable(true);
                 pauseAndContinueButton.setText("¼ÌÐø");
                 // the dispatch thread need wait
                 dispatcher.setNeedWait(true);
             } else if ("¼ÌÐø".equals(text)) {
+                //set the add button to be able
+                addButton.setDisable(false);
+                randomGenButton.setDisable(false);
                 pauseAndContinueButton.setText("ÔÝÍ£");
                 // notify the dispatch thread
                 /*
