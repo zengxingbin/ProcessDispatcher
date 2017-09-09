@@ -90,7 +90,7 @@ public class PopupController {
             if (dispatcher.getReadyQueue().size() < dispatcher.getProcessmaxnum()) {
                 //process.setArrivalTime((int) (dispatcher.getCurrentTime() - dispatcher.getStartTime()));
                 if(!isFirstPopup && dispatcher.getDispathThread().isAlive()) {
-                    int count = 0;
+                    /*int count = 0;
                     while(true) {
                         //avoid current thread to wait all the time 
                           if(count >= 1000)
@@ -104,7 +104,16 @@ public class PopupController {
                           count += 100;
                           if(dispatcher.isAllowdAdd())
                               break;
-                      }
+                      }*/
+                    dispatcher.setRequestAdd(true);
+                    while(dispatcher.isRequestAdd()) {
+                        try {
+                            Thread.currentThread().sleep(100);
+                        } catch (InterruptedException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                    }
                 }else {
                     isFirstPopup = false;
                 }
@@ -137,6 +146,7 @@ public class PopupController {
                         dispatcher.getSynchronizeReadyQueue().sort(new PriorityComparator(2));
                     }
                 }
+                dispatcher.setFinishAdd(true);
             }else {
                 //join in the wait queue
                 dispatcher.getWaitQueue().add(process);

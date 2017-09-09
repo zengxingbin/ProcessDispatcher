@@ -35,7 +35,7 @@ public class Dispatcher extends Application {
     private static int processCounter = 0;// as the the process id
     private final static int PROCESSMAXNUM = 10;// maximum number of processe
                                                 // allowed
-    private final static int TIMESLICING = 3;// time slice
+    private final static int TIMESLICING = 1;// time slice
     private Stage mainStage;
     private Scene mainScene;
     private Stage popupStage;
@@ -109,9 +109,12 @@ public class Dispatcher extends Application {
      * current running process has't run for a unit of time(that is 1)
      * in order to make sure the time is right
      */
+    // is allow to add new process
     private boolean isAllowdAdd;
     //is request add new process
     private boolean isRequestAdd;
+    //is finish the task of adding new process
+    private boolean isFinishAdd;
     // create some signal to realize the communication among threads
     // signal for updating the ready queue
     private boolean removeSignal;// signal for removing process
@@ -216,13 +219,6 @@ public class Dispatcher extends Application {
                  * 
                  * }
                  */
-                // if the clearSignal is true,end the thread
-                if (clearSignal) {
-                    clearSignal = false;
-                    // reset the processCounter
-                    processCounter = 0;
-                    return;
-                }
                 /*// dispatch thread suspend
                 while (needWait) {
                     try {
@@ -236,7 +232,7 @@ public class Dispatcher extends Application {
                  *it is not allowed to add new process to the reayd queue in order 
                  *to make sure the time is right
                  */
-                isAllowdAdd = false;
+                //isAllowdAdd = false;
                 process.setStatus(1);// 1 represents running
                 process.setRunTime(process.getRunTime() + 1);
                 process.setRemainingTime(process.getRemainingTime() - 1);
@@ -270,7 +266,13 @@ public class Dispatcher extends Application {
                 // other process wait for the time slicing
                 for (ProcessPCB process : readyQueue)
                     process.setWaitTime(process.getWaitTime() + 1);
-                isAllowdAdd = true;//allow to add process to the ready queue from now on at another thread
+                // if the clearSignal is true,end the thread
+                if (clearSignal) {
+                    clearSignal = false;
+                    // reset the processCounter
+                    processCounter = 0;
+                    return;
+                }
                 // dispatch thread suspend
                 while (needWait) {
                     try {
@@ -280,81 +282,32 @@ public class Dispatcher extends Application {
                         e.printStackTrace();
                     }
                 }
-                // if process finish
-                if (process.getRemainingTime() == 0) {
-                    // currentTime = System.currentTimeMillis() / 1000;
-                    // set the end time of process
-                    // process.setEndTime((int) (currentTime - startTime));
-                    process.setEndTime(timeCounter);
-                    // compute the turnaround time
-                    process.setTurnaroundTime(process.getWaitTime() + process.getServiceTime());
-                    // compute the normalized turnaround time
-                    process.setNormalizedTurnaroundTime(
-                            (double) process.getTurnaroundTime() / process.getServiceTime());
-                    // change the status of process:finish
-                    process.setStatus(2);
-                    // join to the finishQueue
-                    finishQueue.add(process);
-                    process.setFinish(true);
-                    //compute the process bar
-                    /*double progress = (finishQueue.size() * 1.0) / (readyQueue.size() + finishQueue.size());
-                    mainController.getProgressBar().setProgress(progress);
-                    mainController.getPercentage().setText(progress * 100 + "%");*/
-                    if (readyQueue.isEmpty()) {
-                        // process = null;
-                        System.out.println("--All processes have been completed!--");
-                        // print the finishQueue
 
-                        for (ProcessPCB process : finishQueue)
-                            System.out.println(process);
-
-                        break;
+                if(isRequestAdd) {
+                    isRequestAdd = false;
+                    while(!isFinishAdd) {
+                        try {
+                            Thread.currentThread().sleep(100);
+                        } catch (InterruptedException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
                     }
-                } else if (timeSlicing >= TIMESLICING) {// join in the
-                                                        // readyQueue
-                                                        // when time out
-                    // change the status of process
-                    process.setStatus(0);
-                    // join in the readyQueue
-                    readyQueue.add(process);
-                    // addSignal = true;
-                    // wait for the current thread added to the reaydQueue
-                    // when
-                    // time out
-                    /*
-                     * while(true) { try { Thread.currentThread().sleep(100); }
-                     * catch (InterruptedException e) { e.printStackTrace(); }
-                     * if(!addSignal) break; }
-                     */
+                    //System.out.println("添加完成，当前时间:" + timeCounter);
                 }
-
-                if (!readyQueue.isEmpty()) {
+                /*if (!readyQueue.isEmpty()) {
                     if (timeSlicing >= TIMESLICING || process.isFinish()) {
                         // next process to be run
                         process = readyQueue.remove(0);
                         runningProcess.remove(0);
                         runningProcess.add(process);
                         mainController.getRunProcessText().setText(process.getpName());
-                        // removeSignal = true;//send the remove signal to
-                        // the
-                        // updateReadyQueueThread
-                        // wait for the next process to be run
-                        /*
-                         * while(true) { try {
-                         * Thread.currentThread().sleep(100); } catch
-                         * (InterruptedException e) { e.printStackTrace(); }
-                         * if(!removeSignal) break; }
-                         */
-                        // waitSignal = true;//send waitSignal to the
-                        // updateReadyQueueThread
-                        // record the first time to start
-                     /*// other process wait for the time slicing
-                        for (ProcessPCB process : readyQueue)
-                            process.setWaitTime(process.getWaitTime() + 1);*/
+                        
                         if (process.isFirstTime()) {
                             // currentTime = System.currentTimeMillis() / 1000;
                             // process.setStartTime((int) (currentTime -
                             // startTime));
+                            System.out.println(process.getpName() + "开始时间:" + timeCounter);
                             process.setStartTime(timeCounter);
                             process.setFirstTime(false);
                             process.setHasRun(true);
@@ -362,6 +315,59 @@ public class Dispatcher extends Application {
                         }
 
                         // clear the time slicing for every process
+                        timeSlicing = 0;
+                    }
+                }*/
+                
+                if(process.getRemainingTime() == 0) {
+                    process.setEndTime(timeCounter);
+                    // compute the turnaround time
+                    process.setTurnaroundTime(process.getWaitTime() + process.getServiceTime());
+                    // compute the normalized turnaround time
+                    process.setNormalizedTurnaroundTime(
+                            (double) process.getTurnaroundTime() / process.getServiceTime());
+                    // change the status of process:finish
+                    process.setStatus(2);// represents process completed
+                    process.setFinish(true);
+                    //add the current process to the finish queue
+                    finishQueue.add(process);
+                    if(timeSlicing >= TIMESLICING) {
+                        timeSlicing = 0;
+                    }
+                    if(!readyQueue.isEmpty()) {
+                        //get next process to be run
+                        process = readyQueue.remove(0);
+                        runningProcess.remove(0);
+                        runningProcess.add(process);
+                        mainController.getRunProcessText().setText(process.getpName());
+                        if (process.isFirstTime()) {
+                            System.out.println(process.getpName() + "开始时间:" + timeCounter);
+                            process.setStartTime(timeCounter);
+                            process.setFirstTime(false);
+                            process.setHasRun(true);
+                            
+                        }
+                        
+                    }else {
+                        break;//dispatch over
+                    }
+                }else {
+                    if(timeSlicing >= TIMESLICING) {
+                        //add current running process to the ready queue
+                        readyQueue.add(process);
+                        //get next process to be run ,may be still the current running process
+                        process = readyQueue.remove(0);
+                        runningProcess.remove(0);
+                        runningProcess.add(process);
+                        mainController.getRunProcessText().setText(process.getpName());
+                        if (process.isFirstTime()) {
+                            //System.out.println(process.getpName() + "开始时间:" + timeCounter);
+                            process.setStartTime(timeCounter);
+                            process.setFirstTime(false);
+                            process.setHasRun(true);
+                            
+                        }
+                        //reset the timeslice
                         timeSlicing = 0;
                     }
                 }
@@ -1114,5 +1120,22 @@ public class Dispatcher extends Application {
     public void setProgress(double progress) {
         this.progress = progress;
     }
+
+    public boolean isRequestAdd() {
+        return isRequestAdd;
+    }
+
+    public void setRequestAdd(boolean isRequestAdd) {
+        this.isRequestAdd = isRequestAdd;
+    }
+
+    public boolean isFinishAdd() {
+        return isFinishAdd;
+    }
+
+    public void setFinishAdd(boolean isFinishAdd) {
+        this.isFinishAdd = isFinishAdd;
+    }
+    
     
 }

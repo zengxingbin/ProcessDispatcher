@@ -3,6 +3,7 @@ package view;
 import java.sql.Time;
 
 import javax.swing.JOptionPane;
+import javax.xml.crypto.dsig.spec.DigestMethodParameterSpec;
 
 import application.Dispatcher;
 import javafx.beans.property.DoubleProperty;
@@ -177,7 +178,7 @@ public class MainController {
     private boolean sureReset;
     // sure whether exit
     private boolean sureExit;
-    
+
     /**
      * this method will be auto-called after the construction to set the some
      * initial data
@@ -297,7 +298,7 @@ public class MainController {
          * normalizedTurnaroundTime.setCellValueFactory(cellData ->
          * cellData.getValue().getLineProperty());
          */
-           
+
     }
 
     public void initializeTable(TableView<ProcessPCB> queue, TableColumn<ProcessPCB, String> pId,
@@ -378,7 +379,7 @@ public class MainController {
             JOptionPane.showMessageDialog(null, "就绪队列中无任何进程，请先创建一些进程！", "提示", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        
+
         // gain the scheduling strategy
         String scheduleModel = schedulingStrategy.getValue();
         // gain the contention strategy
@@ -495,7 +496,7 @@ public class MainController {
             int countTime = 0;
             while (dispatcher.isClearSignal()) {
                 try {
-                    if(countTime > 2000)
+                    if (countTime > 2000)
                         return;
                     Thread.currentThread().sleep(100);
                     countTime += 100;
@@ -578,60 +579,70 @@ public class MainController {
         process.setFirstTime(true);
         process.setRemainingTime(process.getServiceTime());
         if (dispatcher.getReadyQueue().size() < dispatcher.getProcessmaxnum()) {
-            //only when the dispatch thread is alive;
-            if(dispatcher.getDispathThread().isAlive()) {
-                int count = 0;
-                while(true) {
-                  //avoid current thread to wait all the time 
-                    if(count >= 1000)
-                        break;
+            // only when the dispatch thread is alive;
+            if (dispatcher.getDispathThread().isAlive()) {
+                /*
+                 * int count = 0; while(true) { //avoid current thread to wait
+                 * all the time if(count >= 1000) break; try {
+                 * Thread.currentThread().sleep(100); } catch
+                 * (InterruptedException e) { // TODO Auto-generated catch block
+                 * e.printStackTrace(); } if(dispatcher.isAllowdAdd()) break;
+                 * count += 100; }
+                 */
+                dispatcher.setRequestAdd(true);
+                dispatcher.setFinishAdd(false);
+                while (dispatcher.isRequestAdd()) {
                     try {
                         Thread.currentThread().sleep(100);
                     } catch (InterruptedException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
                     }
-                    if(dispatcher.isAllowdAdd())
-                        break;
-                    count += 100;
                 }
             }
-            
             process.setArrivalTime(dispatcher.getTimeCounter());
             // record current time
             // dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
             // join in the readyQueue
             dispatcher.getReadyQueue().add(process);
-            //add a new process,so the total service time should increase
+            // add a new process,so the total service time should increase
             dispatcher.setTotalServiceTime(dispatcher.getTotalServiceTime() + process.getServiceTime());
             // join in the synchronizedreadyQueue at the same time
             dispatcher.getSynchronizeReadyQueue().add(process);
             if (dispatcher.getDispathThread().isAlive()) {
                 // judge what the schedulingStrategy is and sort the queue
                 if ("优先数调度(HPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
-                    // if the strategy is round robin time,sort the readyQueue
-                    // according to the priority every time you add new process
-                    //dispatcher.getReadyQueue().sort(new PriorityComparator(0));
+                    // if the strategy is round robin time,sort the
+                    // readyQueue
+                    // according to the priority every time you add new
+                    // process
+                    // dispatcher.getReadyQueue().sort(new
+                    // PriorityComparator(0));
                     dispatcher.getSynchronizeReadyQueue().sort(new PriorityComparator(0));
 
                 } else if ("最短进程优先(SPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
-                    // if the strategy is round robin time,sort the readyQueue
+                    // if the strategy is round robin time,sort the
+                    // readyQueue
                     // according to the serviceTime every time you add new
                     // process
-                    //dispatcher.getReadyQueue().sort(new PriorityComparator(1));
+                    // dispatcher.getReadyQueue().sort(new
+                    // PriorityComparator(1));
                     dispatcher.getSynchronizeReadyQueue().sort(new PriorityComparator(1));
                 } else if ("最短剩余时间(SRT)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
                     // sort the ready queue according to the remaining time;
-                    //dispatcher.getReadyQueue().sort(new PriorityComparator(2));
+                    // dispatcher.getReadyQueue().sort(new
+                    // PriorityComparator(2));
                     dispatcher.getSynchronizeReadyQueue().sort(new PriorityComparator(2));
                 }
             }
+            dispatcher.setFinishAdd(true);
+            //System.out.println(process.getpName() + "添加时间:" + dispatcher.getTimeCounter());
 
         } else {
             // join int the wait queue
             dispatcher.getWaitQueue().add(process);
         }
-        //clear the text field
+        // clear the text field
         newProName.clear();
         newProPriority.clear();
         newProSeviceTime.clear();
@@ -736,11 +747,9 @@ public class MainController {
         return runProcessText;
     }
 
-
     public ProgressBar getProgressBar() {
         return progressBar;
     }
-
 
     public Text getPercentage() {
         return percentage;
@@ -750,6 +759,4 @@ public class MainController {
         return progressHbox;
     }
 
-
-    
 }
