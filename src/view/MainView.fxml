@@ -167,5 +167,12 @@
       </TitledPane>
       <Button fx:id="pauseAndContinueButton" layoutX="805.0" layoutY="451.0" mnemonicParsing="false" onAction="#suspendAndContinue" text="暂停" />
       <Button fx:id="exitButoon" layoutX="902.0" layoutY="451.0" mnemonicParsing="false" onAction="#exit" text="退出" />
+      <HBox fx:id="progressHbox" layoutX="67.0" layoutY="540.0" prefHeight="18.0" prefWidth="717.0" visible="false">
+         <children>
+            <Text fx:id="runProcessText" fill="#097c18" layoutX="813.0" layoutY="546.0" strokeType="OUTSIDE" strokeWidth="0.0" wrappingWidth="64.240234375" />
+            <ProgressBar fx:id="progressBar" layoutX="842.0" layoutY="533.0" prefHeight="18.0" prefWidth="586.0" progress="0.0" />
+            <Text fx:id="percentage" fill="#1d64db" strokeType="OUTSIDE" strokeWidth="0.0" text="0%" wrappingWidth="49.240234375" />
+         </children>
+      </HBox>
    </children>
 </AnchorPane>

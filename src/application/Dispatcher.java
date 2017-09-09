@@ -7,6 +7,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.swing.JOptionPane;
 import javax.swing.plaf.synth.SynthSpinnerUI;
 
+import com.sun.javafx.binding.StringFormatter;
+
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -56,8 +58,12 @@ public class Dispatcher extends Application {
     private ObservableList<ProcessPCB> finishQueue = FXCollections.observableArrayList();
     // running
     private ObservableList<ProcessPCB> runningProcess = FXCollections.observableArrayList();
+    //sum of all the process service time
+    private int totalServiceTime;
     // current running process
     private ProcessPCB process;
+    // the progress of the dispatch
+    private double progress;
     // scheduling strategy
     private int schedulingStrategy = -1;// 0.rr 1.priority 2.SPN 3.SRT
     // contention strategy
@@ -104,6 +110,8 @@ public class Dispatcher extends Application {
      * in order to make sure the time is right
      */
     private boolean isAllowdAdd;
+    //is request add new process
+    private boolean isRequestAdd;
     // create some signal to realize the communication among threads
     // signal for updating the ready queue
     private boolean removeSignal;// signal for removing process
@@ -131,6 +139,8 @@ public class Dispatcher extends Application {
         @Override
         public void run() {
             System.out.println("start the dispatch thread!");
+            //initialize the progress bar
+            mainController.getProgressHbox().setVisible(true);
             switch (schedulingStrategy) {
             case 0:
                 rrDispatcher();
@@ -145,7 +155,24 @@ public class Dispatcher extends Application {
                 SPNDAndSRTDispatch();
                 break;
             }
-
+            //reset proccess Counter
+            processCounter = 0;
+            // rmove the last completed process from runningProcess table
+            runningProcess.remove(0);
+            // reset the hasStartDispatch value when the dispatch thread finish
+            // hasStartDispatch = false;
+            //reset the time counter;
+            timeCounter = 0;
+            
+            //finsht dispatch,reset the progress bar
+            //reset totalServiceTime
+            totalServiceTime = 0;
+            // reset the processCounter
+            mainController.getProgressHbox().setVisible(false);
+            mainController.getRunProcessText().setText("");
+            mainController.getPercentage().setText("0%");
+            mainController.getProgressBar().setProgress(0);
+            progress = 0;
         }
 
         public void rrDispatcher() {
@@ -170,6 +197,7 @@ public class Dispatcher extends Application {
                 process.setStartTime(timeCounter);
                 process.setFirstTime(false);
                 process.setHasRun(true);
+                mainController.getRunProcessText().setText(process.getpName());
             } else {
                 System.out.println("There is no  process in ready queue! ");
                 JOptionPane.showMessageDialog(null, "就绪队列中无任何进程，请先创建一些进程！", "提示", JOptionPane.WARNING_MESSAGE);
@@ -233,6 +261,11 @@ public class Dispatcher extends Application {
                 }
                 // increase the time counter
                 timeCounter++;
+                progress = (timeCounter * 1.0) / totalServiceTime;
+    
+                mainController.getProgressBar().setProgress(progress);
+                mainController.getPercentage().setText(String.format("%.1f", progress * 100) + "%");
+                
                 timeSlicing++;
                 // other process wait for the time slicing
                 for (ProcessPCB process : readyQueue)
@@ -252,7 +285,7 @@ public class Dispatcher extends Application {
                     // currentTime = System.currentTimeMillis() / 1000;
                     // set the end time of process
                     // process.setEndTime((int) (currentTime - startTime));
-                    process.setEndTime(process.getStartTime() + process.getServiceTime() + process.getWaitTime());
+                    process.setEndTime(timeCounter);
                     // compute the turnaround time
                     process.setTurnaroundTime(process.getWaitTime() + process.getServiceTime());
                     // compute the normalized turnaround time
@@ -263,6 +296,10 @@ public class Dispatcher extends Application {
                     // join to the finishQueue
                     finishQueue.add(process);
                     process.setFinish(true);
+                    //compute the process bar
+                    /*double progress = (finishQueue.size() * 1.0) / (readyQueue.size() + finishQueue.size());
+                    mainController.getProgressBar().setProgress(progress);
+                    mainController.getPercentage().setText(progress * 100 + "%");*/
                     if (readyQueue.isEmpty()) {
                         // process = null;
                         System.out.println("--All processes have been completed!--");
@@ -297,6 +334,7 @@ public class Dispatcher extends Application {
                         process = readyQueue.remove(0);
                         runningProcess.remove(0);
                         runningProcess.add(process);
+                        mainController.getRunProcessText().setText(process.getpName());
                         // removeSignal = true;//send the remove signal to
                         // the
                         // updateReadyQueueThread
@@ -320,6 +358,7 @@ public class Dispatcher extends Application {
                             process.setStartTime(timeCounter);
                             process.setFirstTime(false);
                             process.setHasRun(true);
+                            
                         }
 
                         // clear the time slicing for every process
@@ -328,14 +367,7 @@ public class Dispatcher extends Application {
                 }
 
             }
-            // reset the processCounter
-            processCounter = 0;
-            // rmove the last completed process from runningProcess table
-            runningProcess.remove(0);
-            // reset the hasStartDispatch value when the dispatch thread finish
-            // hasStartDispatch = false;
-
-            // give a tip of finishing the dispatch
+         // give a tip of finishing the dispatch
             JOptionPane.showMessageDialog(null, "所有进程调度完成！", "提示", JOptionPane.WARNING_MESSAGE);
         }
 
@@ -370,6 +402,7 @@ public class Dispatcher extends Application {
                 process.setStartTime(timeCounter);
                 process.setHasRun(true);
                 process.setFirstTime(false);
+                mainController.getRunProcessText().setText(process.getpName());
                 while (true) {
                     // if the clearSignal is true,end the thread
                     if (clearSignal) {
@@ -409,6 +442,10 @@ public class Dispatcher extends Application {
                     }
                     // increase the timeCounter
                     timeCounter++;
+                    progress = (timeCounter * 1.0) / totalServiceTime;
+                    
+                    mainController.getProgressBar().setProgress(progress);
+                    mainController.getPercentage().setText(String.format("%.1f", progress * 100) + "%");
                     // other process wait for the currnet process to finish
                     for (ProcessPCB process : readyQueue)
                         process.setWaitTime(process.getWaitTime() + 1);
@@ -496,6 +533,7 @@ public class Dispatcher extends Application {
                 process.setStartTime(timeCounter);
                 process.setHasRun(true);
                 process.setFirstTime(false);
+                mainController.getRunProcessText().setText(process.getpName());
                 while (true) {
                     // if the clearSignal is true,end the thread
                     if (clearSignal) {
@@ -538,6 +576,10 @@ public class Dispatcher extends Application {
                         process.setWaitTime(process.getWaitTime() + 1);
                     // increase the timeCounter
                     timeCounter++;
+                    progress = (timeCounter * 1.0) / totalServiceTime;
+                    
+                    mainController.getProgressBar().setProgress(progress);
+                    mainController.getPercentage().setText(String.format("%.1f", progress * 100) + "%");
                     isAllowdAdd = true;
                     // dispatch thread suspend
                     while (needWait) {
@@ -620,11 +662,7 @@ public class Dispatcher extends Application {
                     }
                 }
             }
-            // reset the processCounter
-            processCounter = 0;
-            // remove the last running process
-            runningProcess.remove(0);
-
+         // give a tip of finishing the dispatch
             JOptionPane.showMessageDialog(null, "所有进程调度完成！", "提示", JOptionPane.WARNING_MESSAGE);
         }
 
@@ -658,6 +696,7 @@ public class Dispatcher extends Application {
             process.setStartTime(timeCounter);
             process.setHasRun(true);
             process.setFirstTime(false);
+            mainController.getRunProcessText().setText(process.getpName());
             while (true) {
                 // if the clearSignal is true,end the thread
                 if (clearSignal) {
@@ -697,6 +736,10 @@ public class Dispatcher extends Application {
                 }
                 // increase the timeCounter
                 timeCounter++;
+                progress = (timeCounter * 1.0) / totalServiceTime;
+                
+                mainController.getProgressBar().setProgress(progress);
+                mainController.getPercentage().setText(String.format("%.1f", progress * 100) + "%");
                 // other process wait for the currnet process to finish
                 for (ProcessPCB process : readyQueue)
                     process.setWaitTime(process.getWaitTime() + 1);
@@ -794,11 +837,7 @@ public class Dispatcher extends Application {
                 }
             }
 
-            // reset the processCounter
-            processCounter = 0;
-            // remove the last running process
-            runningProcess.remove(0);
-
+         // give a tip of finishing the dispatch
             JOptionPane.showMessageDialog(null, "所有进程调度完成！", "提示", JOptionPane.WARNING_MESSAGE);
         }
     }
@@ -1058,6 +1097,22 @@ public class Dispatcher extends Application {
 
     public void setAllowdAdd(boolean isAllowdAdd) {
         this.isAllowdAdd = isAllowdAdd;
+    }
+
+    public int getTotalServiceTime() {
+        return totalServiceTime;
+    }
+
+    public void setTotalServiceTime(int totalServiceTime) {
+        this.totalServiceTime = totalServiceTime;
+    }
+
+    public double getProgress() {
+        return progress;
+    }
+
+    public void setProgress(double progress) {
+        this.progress = progress;
     }
     
 }

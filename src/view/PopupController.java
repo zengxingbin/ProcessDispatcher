@@ -91,9 +91,9 @@ public class PopupController {
                 //process.setArrivalTime((int) (dispatcher.getCurrentTime() - dispatcher.getStartTime()));
                 if(!isFirstPopup && dispatcher.getDispathThread().isAlive()) {
                     int count = 0;
-                    while(!dispatcher.isAllowdAdd()) {
+                    while(true) {
                         //avoid current thread to wait all the time 
-                          if(count >= 2000)
+                          if(count >= 1000)
                               break;
                           try {
                               Thread.currentThread().sleep(100);
@@ -102,6 +102,8 @@ public class PopupController {
                               e.printStackTrace();
                           }
                           count += 100;
+                          if(dispatcher.isAllowdAdd())
+                              break;
                       }
                 }else {
                     isFirstPopup = false;
@@ -111,6 +113,8 @@ public class PopupController {
                 // record current time
                 //dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
                 dispatcher.getReadyQueue().add(process);
+                //add a new process,so the totalServiceTime should increase
+                dispatcher.setTotalServiceTime(dispatcher.getTotalServiceTime() + process.getServiceTime());
                 // add to the synchronized queue at the same time
                 dispatcher.getSynchronizeReadyQueue().add(process);
                 if(dispatcher.getDispathThread().isAlive()) {

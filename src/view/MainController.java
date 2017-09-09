@@ -14,9 +14,12 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.scene.text.Text;
 import model.ProcessPCB;
 import util.PriorityComparator;
 
@@ -160,13 +163,21 @@ public class MainController {
     private Button pauseAndContinueButton;
     @FXML
     private Button exitButoon;
+    @FXML
+    private Text runProcessText;
+    @FXML
+    private ProgressBar progressBar;
+    @FXML
+    private Text percentage;
+    @FXML
+    private HBox progressHbox;
     // jude the if the dispatcher button has been clidked
     private boolean isClicked;
     // sure whether reset
     private boolean sureReset;
     // sure whether exit
     private boolean sureExit;
-
+    
     /**
      * this method will be auto-called after the construction to set the some
      * initial data
@@ -286,7 +297,7 @@ public class MainController {
          * normalizedTurnaroundTime.setCellValueFactory(cellData ->
          * cellData.getValue().getLineProperty());
          */
-
+           
     }
 
     public void initializeTable(TableView<ProcessPCB> queue, TableColumn<ProcessPCB, String> pId,
@@ -367,7 +378,7 @@ public class MainController {
             JOptionPane.showMessageDialog(null, "就绪队列中无任何进程，请先创建一些进程！", "提示", JOptionPane.WARNING_MESSAGE);
             return;
         }
-
+        
         // gain the scheduling strategy
         String scheduleModel = schedulingStrategy.getValue();
         // gain the contention strategy
@@ -499,7 +510,10 @@ public class MainController {
         dispatcher.getWaitQueue().clear();
         dispatcher.getFinishQueue().clear();
         dispatcher.getRunningProcess().clear();
-
+        dispatcher.setTimeCounter(0);
+        dispatcher.setProcessCounter(0);
+        dispatcher.setTotalServiceTime(0);
+        dispatcher.setProgress(0);
     }
 
     /**
@@ -510,6 +524,7 @@ public class MainController {
         newProName.clear();
         newProPriority.clear();
         newProSeviceTime.clear();
+        dispatcher.setTimeCounter(0);
     }
 
     /**
@@ -566,9 +581,9 @@ public class MainController {
             //only when the dispatch thread is alive;
             if(dispatcher.getDispathThread().isAlive()) {
                 int count = 0;
-                while(!dispatcher.isAllowdAdd()) {
+                while(true) {
                   //avoid current thread to wait all the time 
-                    if(count >= 2000)
+                    if(count >= 1000)
                         break;
                     try {
                         Thread.currentThread().sleep(100);
@@ -576,6 +591,8 @@ public class MainController {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
                     }
+                    if(dispatcher.isAllowdAdd())
+                        break;
                     count += 100;
                 }
             }
@@ -585,6 +602,8 @@ public class MainController {
             // dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
             // join in the readyQueue
             dispatcher.getReadyQueue().add(process);
+            //add a new process,so the total service time should increase
+            dispatcher.setTotalServiceTime(dispatcher.getTotalServiceTime() + process.getServiceTime());
             // join in the synchronizedreadyQueue at the same time
             dispatcher.getSynchronizeReadyQueue().add(process);
             if (dispatcher.getDispathThread().isAlive()) {
@@ -612,7 +631,10 @@ public class MainController {
             // join int the wait queue
             dispatcher.getWaitQueue().add(process);
         }
-
+        //clear the text field
+        newProName.clear();
+        newProPriority.clear();
+        newProSeviceTime.clear();
     }
 
     /**
@@ -710,4 +732,24 @@ public class MainController {
         this.isContention = isContention;
     }
 
+    public Text getRunProcessText() {
+        return runProcessText;
+    }
+
+
+    public ProgressBar getProgressBar() {
+        return progressBar;
+    }
+
+
+    public Text getPercentage() {
+        return percentage;
+    }
+
+    public HBox getProgressHbox() {
+        return progressHbox;
+    }
+
+
+    
 }
