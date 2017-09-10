@@ -2,7 +2,11 @@ package model;
 
 import javafx.beans.property.StringProperty;
 import javafx.beans.property.SimpleStringProperty;
-
+/**
+ * 
+ * @author ÔøĞÒ±ò(bingoo)
+ * 2017Äê9ÔÂ10ÈÕ
+ */
 public class ProcessPCB implements Cloneable{
     private int pid;// process id
     private String pName;// process name

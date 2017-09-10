@@ -12,7 +12,11 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import model.ProcessPCB;
 import util.ProcessComparator;
-
+/**
+ * 
+ * @author ÔøĞÒ±ò(bingoo)
+ * 2017Äê9ÔÂ10ÈÕ
+ */
 public class PopupController {
     @FXML
     private Label inputTip;

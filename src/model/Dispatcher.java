@@ -7,7 +7,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import util.ProcessComparator;
 import util.Queue;
-
+/**
+ * 
+ * @author ÔøĞÒ±ò(bingoo)
+ * 2017Äê9ÔÂ10ÈÕ
+ */
 public class Dispatcher {
     private static Object LOCK = new Object();
     private static int processCounter = 0;// as the the process id

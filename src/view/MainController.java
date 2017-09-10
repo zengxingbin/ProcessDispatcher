@@ -23,7 +23,11 @@ import javafx.scene.layout.HBox;
 import javafx.scene.text.Text;
 import model.ProcessPCB;
 import util.ProcessComparator;
-
+/**
+ * 
+ * @author ÔøĞÒ±ò(bingoo)
+ * 2017Äê9ÔÂ10ÈÕ
+ */
 public class MainController {
     private Dispatcher dispatcher;
     @FXML

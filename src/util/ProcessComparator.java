@@ -3,7 +3,11 @@ package util;
 import java.util.Comparator;
 
 import model.ProcessPCB;
-
+/**
+ * 
+ * @author ÔøĞÒ±ò(bingoo)
+ * 2017Äê9ÔÂ10ÈÕ
+ */
 public class ProcessComparator implements Comparator<ProcessPCB> {
     private int mode;
     public ProcessComparator(int mode) {

@@ -4,7 +4,11 @@ import application.Dispatcher;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.text.Text;
-
+/**
+ * 
+ * @author ÔøĞÒ±ò(bingoo)
+ * 2017Äê9ÔÂ10ÈÕ
+ */
 public class WarningController {
     private Dispatcher dispatcher;
     @FXML

@@ -15,7 +15,11 @@ import java.util.AbstractCollection;
 import java.util.AbstractQueue;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
+/**
+ * 
+ * @author ÔøĞÒ±ò(bingoo)
+ * 2017Äê9ÔÂ10ÈÕ
+ */
 public class Queue<T> {
 
     private ConcurrentLinkedQueue<T> queue;
