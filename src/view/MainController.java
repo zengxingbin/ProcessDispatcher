@@ -26,7 +26,9 @@ import util.ProcessComparator;
 /**
  * 
  * @author 曾幸彬(bingoo)
- * 2017年9月10日
+ * email:2045620125@qq.com
+ * 2017年9月10日 下午1:08:31
+ *
  */
 public class MainController {
     private Dispatcher dispatcher;

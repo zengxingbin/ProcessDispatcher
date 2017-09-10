@@ -6,7 +6,9 @@ import model.ProcessPCB;
 /**
  * 
  * @author 曾幸彬(bingoo)
- * 2017年9月10日
+ * email:2045620125@qq.com
+ * 2017年9月10日 下午1:07:59
+ *
  */
 public class ProcessComparator implements Comparator<ProcessPCB> {
     private int mode;

@@ -5,7 +5,9 @@ import javafx.beans.property.SimpleStringProperty;
 /**
  * 
  * @author 曾幸彬(bingoo)
- * 2017年9月10日
+ * email:2045620125@qq.com
+ * 2017年9月10日 下午1:07:47
+ *
  */
 public class ProcessPCB implements Cloneable{
     private int pid;// process id

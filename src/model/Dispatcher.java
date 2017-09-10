@@ -10,7 +10,9 @@ import util.Queue;
 /**
  * 
  * @author 曾幸彬(bingoo)
- * 2017年9月10日
+ * email:2045620125@qq.com
+ * 2017年9月10日 下午1:07:34
+ *
  */
 public class Dispatcher {
     private static Object LOCK = new Object();

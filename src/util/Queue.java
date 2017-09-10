@@ -18,7 +18,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * 
  * @author 曾幸彬(bingoo)
- * 2017年9月10日
+ * email:2045620125@qq.com
+ * 2017年9月10日 下午1:08:16
+ *
  */
 public class Queue<T> {
 
