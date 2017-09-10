@@ -15,7 +15,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXMLLoader;
 import javafx.stage.Stage;
 import model.ProcessPCB;
-import util.PriorityComparator;
+import util.ProcessComparator;
 import util.Queue;
 import view.MainController;
 import view.PopupController;
@@ -35,7 +35,7 @@ public class Dispatcher extends Application {
     private static int processCounter = 0;// as the the process id
     private final static int PROCESSMAXNUM = 10;// maximum number of processe
                                                 // allowed
-    private final static int TIMESLICING = 1;// time slice
+    private static int TIMESLICING = 1;// time slice
     private Stage mainStage;
     private Scene mainScene;
     private Stage popupStage;
@@ -157,6 +157,12 @@ public class Dispatcher extends Application {
             case 3:
                 SPNDAndSRTDispatch();
                 break;
+            case 4:
+                FCFSDispatch();
+                break;
+            case 5:
+                HRRNDispatch();
+                break;
             }
             //reset proccess Counter
             processCounter = 0;
@@ -173,7 +179,7 @@ public class Dispatcher extends Application {
             // reset the processCounter
             mainController.getProgressHbox().setVisible(false);
             mainController.getRunProcessText().setText("");
-            mainController.getPercentage().setText("0%");
+            mainController.getPercentage().setText("    0%");
             mainController.getProgressBar().setProgress(0);
             progress = 0;
         }
@@ -260,17 +266,38 @@ public class Dispatcher extends Application {
                 progress = (timeCounter * 1.0) / totalServiceTime;
     
                 mainController.getProgressBar().setProgress(progress);
-                mainController.getPercentage().setText(String.format("%.1f", progress * 100) + "%");
+                mainController.getPercentage().setText("    " + String.format("%.1f", progress * 100) + "%");
                 
                 timeSlicing++;
                 // other process wait for the time slicing
-                for (ProcessPCB process : readyQueue)
+                /*for (ProcessPCB process : readyQueue) {
                     process.setWaitTime(process.getWaitTime() + 1);
+                }*/
+                ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
+                for(ProcessPCB process :readyQueue) {
+                    try {
+                        ProcessPCB processPCB = (ProcessPCB) process.clone();
+                        processPCB.setWaitTime(processPCB.getWaitTime()+1);
+                        readyQueueTemp.add(processPCB);
+                    } catch (CloneNotSupportedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+                readyQueue.clear();
+                readyQueue.addAll(readyQueueTemp);
+                synchronizeReadyQueue.clear();
+                synchronizeReadyQueue.addAll(readyQueue);
+                //synchronizeReadyQueue.sort(new ProcessComparator(mode));
                 // if the clearSignal is true,end the thread
                 if (clearSignal) {
                     clearSignal = false;
                     // reset the processCounter
                     processCounter = 0;
+                    //clear the ready queue and the synchronize ready queue
+                    readyQueue.clear();
+                    synchronizeReadyQueue.clear();
+                    
                     return;
                 }
                 // dispatch thread suspend
@@ -393,7 +420,7 @@ public class Dispatcher extends Application {
             // sort the readyQueue according to priority
             //readyQueue.sort(new PriorityComparator(0));
             // sort the synchronizedReadyQueue according to the priority
-            synchronizeReadyQueue.sort(new PriorityComparator(0));
+            synchronizeReadyQueue.sort(new ProcessComparator(0));
             if(!isContention) {
             // run the first process which has highest priority
             // first process to be run
@@ -448,7 +475,7 @@ public class Dispatcher extends Application {
                     progress = (timeCounter * 1.0) / totalServiceTime;
                     
                     mainController.getProgressBar().setProgress(progress);
-                    mainController.getPercentage().setText(String.format("%.1f", progress * 100) + "%");
+                    mainController.getPercentage().setText("    " + String.format("%.1f", progress * 100) + "%");
                     // other process wait for the currnet process to finish
                     for (ProcessPCB process : readyQueue)
                         process.setWaitTime(process.getWaitTime() + 1);
@@ -458,6 +485,9 @@ public class Dispatcher extends Application {
                         clearSignal = false;
                         // reset the processCounter
                         processCounter = 0;
+                        //clear the ready queue and the synchronize ready queue
+                        readyQueue.clear();
+                        synchronizeReadyQueue.clear();
                         return;
                     }
                     // dispatch thread suspend
@@ -593,7 +623,7 @@ public class Dispatcher extends Application {
                     progress = (timeCounter * 1.0) / totalServiceTime;
                     
                     mainController.getProgressBar().setProgress(progress);
-                    mainController.getPercentage().setText(String.format("%.1f", progress * 100) + "%");
+                    mainController.getPercentage().setText("    " + String.format("%.1f", progress * 100) + "%");
                     // other process wait for the currnet process to finish
                     for (ProcessPCB process : readyQueue)
                         process.setWaitTime(process.getWaitTime() + 1);
@@ -604,6 +634,9 @@ public class Dispatcher extends Application {
                         clearSignal = false;
                         // reset the processCounter
                         processCounter = 0;
+                        //clear the ready queue and the synchronize ready queue
+                        readyQueue.clear();
+                        synchronizeReadyQueue.clear();
                         return;
                     }
                     // dispatch thread suspend
@@ -685,7 +718,7 @@ public class Dispatcher extends Application {
                                 //add current running process to the ready queue
                                 readyQueue.add(process);
                                 synchronizeReadyQueue.add(process);
-                                synchronizeReadyQueue.sort(new PriorityComparator(0));
+                                synchronizeReadyQueue.sort(new ProcessComparator(0));
                                 synchronizeReadyQueue.remove(0);
                                 readyQueue.remove(process2);
                                 process = process2;
@@ -714,11 +747,11 @@ public class Dispatcher extends Application {
             // first process to be run
             if (!isContention) {
                 //readyQueue.sort(new PriorityComparator(1));
-                synchronizeReadyQueue.sort(new PriorityComparator(1));
+                synchronizeReadyQueue.sort(new ProcessComparator(1));
                 
             } else {
                 //readyQueue.sort(new PriorityComparator(2));
-                synchronizeReadyQueue.sort(new PriorityComparator(2));
+                synchronizeReadyQueue.sort(new ProcessComparator(2));
             }
             // process = readyQueue.removeLast();
             //process = readyQueue.remove(0);
@@ -771,7 +804,7 @@ public class Dispatcher extends Application {
                 progress = (timeCounter * 1.0) / totalServiceTime;
                 
                 mainController.getProgressBar().setProgress(progress);
-                mainController.getPercentage().setText(String.format("%.1f", progress * 100) + "%");
+                mainController.getPercentage().setText("    " + String.format("%.1f", progress * 100) + "%");
                 // other process wait for the currnet process to finish
                 for (ProcessPCB process : readyQueue)
                     process.setWaitTime(process.getWaitTime() + 1);
@@ -781,6 +814,9 @@ public class Dispatcher extends Application {
                     clearSignal = false;
                     // reset the processCounter
                     processCounter = 0;
+                    //clear the ready queue and the synchronize ready queue
+                    readyQueue.clear();
+                    synchronizeReadyQueue.clear();
                     return;
                 }
                 // dispatch thread suspend
@@ -873,7 +909,7 @@ public class Dispatcher extends Application {
                             //add current running process to the ready queue
                             readyQueue.add(process);
                             synchronizeReadyQueue.add(process);
-                            synchronizeReadyQueue.sort(new PriorityComparator(2));
+                            synchronizeReadyQueue.sort(new ProcessComparator(2));
                             readyQueue.remove(process2);
                             synchronizeReadyQueue.remove(0);
                             process = process2;
@@ -887,6 +923,302 @@ public class Dispatcher extends Application {
                     }
 
                 }
+            }
+
+         // give a tip of finishing the dispatch
+            JOptionPane.showMessageDialog(null, "所有进程调度完成！", "提示", JOptionPane.WARNING_MESSAGE);
+        }
+        // First Come First Service
+        public void FCFSDispatch() {
+            //get the first process to run
+            process = readyQueue.remove(0);
+
+            /*
+             * startTime = System.currentTimeMillis() / 1000; currentTime =
+             * startTime;
+             */
+            // add to the running process
+            runningProcess.add(process);
+            process.setStartTime(timeCounter);
+            process.setHasRun(true);
+            process.setFirstTime(false);
+            mainController.getRunProcessText().setText(process.getpName());
+            while (true) {
+                
+                //isAllowdAdd = false;
+                process.setStatus(1);// 1 represents running
+                process.setRunTime(process.getRunTime() + 1);
+                process.setRemainingTime(process.getRemainingTime() - 1);
+                System.out.println("**Currnet running process:" + process + "**");
+                /*// dispatch thread suspend
+                while (needWait) {
+                    try {
+                        Thread.currentThread().sleep(100);
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }*/
+                runningProcess.remove(0);
+                try {
+                    process = (ProcessPCB) process.clone();
+                    runningProcess.add(process);
+                } catch (CloneNotSupportedException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                }
+                // current process run for one second in every circle
+                try {
+                    Thread.currentThread().sleep(1000);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                // increase the timeCounter
+                timeCounter++;
+                progress = (timeCounter * 1.0) / totalServiceTime;
+                
+                mainController.getProgressBar().setProgress(progress);
+                mainController.getPercentage().setText("    " + String.format("%.1f", progress * 100) + "%");
+                // other process wait for the currnet process to finish
+                for (ProcessPCB process : readyQueue)
+                    process.setWaitTime(process.getWaitTime() + 1);
+                //isAllowdAdd = true;
+                // if the clearSignal is true,end the thread
+                if (clearSignal) {
+                    clearSignal = false;
+                    // reset the processCounter
+                    processCounter = 0;
+                    //clear the ready queue and the synchronize ready queue
+                    readyQueue.clear();
+                    synchronizeReadyQueue.clear();
+                    return;
+                }
+                // dispatch thread suspend
+                while (needWait) {
+                    try {
+                        Thread.currentThread().sleep(100);
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+                if(isRequestAdd) {
+                    isRequestAdd = false;
+                    while(!isFinishAdd) {
+                        try {
+                            Thread.currentThread().sleep(100);
+                        } catch (InterruptedException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                /*for(ProcessPCB process : synchronizeReadyQueue)
+                    process.setWaitTime(process.getWaitTime() + 1);*/
+                if (process.getRemainingTime() == 0) {
+                    // currentTime = System.currentTimeMillis() / 1000;
+                    // set the end time of process
+                    // process.setEndTime((int) (currentTime - startTime));
+                    process.setEndTime(timeCounter);
+                    // compute the turnaround time
+                    process.setTurnaroundTime(process.getWaitTime() + process.getServiceTime());
+                    // compute the normalized turnaround time
+                    process.setNormalizedTurnaroundTime(
+                            (double) process.getTurnaroundTime() / process.getServiceTime());
+                    // change the status of process:finish
+                    process.setStatus(2);// represents process completed
+                    // join to the finishQueue
+                    // finishQueue.addFirst(process);
+                    finishQueue.add(process);
+                    process.setFinish(true);
+                    // process = null;
+                    if (readyQueue.isEmpty()) {
+                        /*
+                         * process = null; System.out.
+                         * println("--All processes have been completed!--" );
+                         * // print the finishQueue for (ProcessPCB process :
+                         * finishQueue) System.out.println(process); break;
+                         */
+                        /*
+                         * while (readyQueue.isEmpty()) System.out.
+                         * println("wait the process added to the ready queue"
+                         * ); try { Thread.currentThread().sleep(1000); } catch
+                         * (InterruptedException e) { // TODO Auto-generated
+                         * catch block e.printStackTrace(); }
+                         */
+                        System.out.println("--All processes have been completed!--");
+                        // print the finishQueue
+                        for (ProcessPCB process : finishQueue)
+                            System.out.println(process);
+                        break;
+                    } else {
+                        // if current process finish,run next process which has
+                        // highest priority
+                        process = readyQueue.remove(0);
+                        // currentTime = System.currentTimeMillis() / 1000;
+                        // process.setStartTime((int) currentTime - (int)
+                        // startTime);
+                        mainController.getRunProcessText().setText(process.getpName());
+                        if (process.isFirstTime()) {
+                            process.setStartTime(timeCounter);
+                            process.setFirstTime(false);
+                            process.setHasRun(true);
+                        }
+                    }
+                }
+            }
+
+         // give a tip of finishing the dispatch
+            JOptionPane.showMessageDialog(null, "所有进程调度完成！", "提示", JOptionPane.WARNING_MESSAGE);
+        }
+        public void HRRNDispatch() {
+            // run the first process which has highest priority
+            // first process to be run
+            
+            synchronizeReadyQueue.sort(new ProcessComparator(3));
+            
+            // process = readyQueue.removeLast();
+            //process = readyQueue.remove(0);
+            process = synchronizeReadyQueue.remove(0);
+            readyQueue.remove(process);
+
+            /*
+             * startTime = System.currentTimeMillis() / 1000; currentTime =
+             * startTime;
+             */
+            // add to the running process
+            runningProcess.add(process);
+            process.setStartTime(timeCounter);
+            process.setHasRun(true);
+            process.setFirstTime(false);
+            mainController.getRunProcessText().setText(process.getpName());
+            while (true) {
+                
+                //isAllowdAdd = false;
+                process.setStatus(1);// 1 represents running
+                process.setRunTime(process.getRunTime() + 1);
+                process.setRemainingTime(process.getRemainingTime() - 1);
+                System.out.println("**Currnet running process:" + process + "**");
+                /*// dispatch thread suspend
+                while (needWait) {
+                    try {
+                        Thread.currentThread().sleep(100);
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }*/
+                runningProcess.remove(0);
+                try {
+                    process = (ProcessPCB) process.clone();
+                    runningProcess.add(process);
+                } catch (CloneNotSupportedException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                }
+                // current process run for one second in every circle
+                try {
+                    Thread.currentThread().sleep(1000);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                // increase the timeCounter
+                timeCounter++;
+                progress = (timeCounter * 1.0) / totalServiceTime;
+                
+                mainController.getProgressBar().setProgress(progress);
+                mainController.getPercentage().setText("    " + String.format("%.1f", progress * 100) + "%");
+                // other process wait for the currnet process to finish
+                for (ProcessPCB process : readyQueue)
+                    process.setWaitTime(process.getWaitTime() + 1);
+                //isAllowdAdd = true;
+                // if the clearSignal is true,end the thread
+                if (clearSignal) {
+                    clearSignal = false;
+                    // reset the processCounter
+                    processCounter = 0;
+                    //clear the ready queue and the synchronize ready queue
+                    readyQueue.clear();
+                    synchronizeReadyQueue.clear();
+                    return;
+                }
+                // dispatch thread suspend
+                while (needWait) {
+                    try {
+                        Thread.currentThread().sleep(100);
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+                if(isRequestAdd) {
+                    isRequestAdd = false;
+                    while(!isFinishAdd) {
+                        try {
+                            Thread.currentThread().sleep(100);
+                        } catch (InterruptedException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                /*for(ProcessPCB process : synchronizeReadyQueue)
+                    process.setWaitTime(process.getWaitTime() + 1);*/
+                if (process.getRemainingTime() == 0) {
+                    // currentTime = System.currentTimeMillis() / 1000;
+                    // set the end time of process
+                    // process.setEndTime((int) (currentTime - startTime));
+                    process.setEndTime(timeCounter);
+                    // compute the turnaround time
+                    process.setTurnaroundTime(process.getWaitTime() + process.getServiceTime());
+                    // compute the normalized turnaround time
+                    process.setNormalizedTurnaroundTime(
+                            (double) process.getTurnaroundTime() / process.getServiceTime());
+                    // change the status of process:finish
+                    process.setStatus(2);// represents process completed
+                    // join to the finishQueue
+                    // finishQueue.addFirst(process);
+                    finishQueue.add(process);
+                    process.setFinish(true);
+                    // process = null;
+                    if (readyQueue.isEmpty()) {
+                        /*
+                         * process = null; System.out.
+                         * println("--All processes have been completed!--" );
+                         * // print the finishQueue for (ProcessPCB process :
+                         * finishQueue) System.out.println(process); break;
+                         */
+                        /*
+                         * while (readyQueue.isEmpty()) System.out.
+                         * println("wait the process added to the ready queue"
+                         * ); try { Thread.currentThread().sleep(1000); } catch
+                         * (InterruptedException e) { // TODO Auto-generated
+                         * catch block e.printStackTrace(); }
+                         */
+                        System.out.println("--All processes have been completed!--");
+                        // print the finishQueue
+                        for (ProcessPCB process : finishQueue)
+                            System.out.println(process);
+                        break;
+                    } else {
+                        // if current process finish,run next process which has
+                        // highest priority
+                        //process = readyQueue.remove(0);
+                        process = synchronizeReadyQueue.remove(0);
+                        readyQueue.remove(process);
+                        // currentTime = System.currentTimeMillis() / 1000;
+                        // process.setStartTime((int) currentTime - (int)
+                        // startTime);
+                        mainController.getRunProcessText().setText(process.getpName());
+                        if (process.isFirstTime()) {
+                            process.setStartTime(timeCounter);
+                            process.setFirstTime(false);
+                            process.setHasRun(true);
+                        }
+                    }
+                } 
             }
 
          // give a tip of finishing the dispatch
@@ -1181,6 +1513,14 @@ public class Dispatcher extends Application {
 
     public void setFinishAdd(boolean isFinishAdd) {
         this.isFinishAdd = isFinishAdd;
+    }
+
+    public static int getTIMESLICING() {
+        return TIMESLICING;
+    }
+
+    public static void setTIMESLICING(int tIMESLICING) {
+        TIMESLICING = tIMESLICING;
     }
     
     

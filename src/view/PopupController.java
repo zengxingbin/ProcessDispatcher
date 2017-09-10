@@ -11,7 +11,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import model.ProcessPCB;
-import util.PriorityComparator;
+import util.ProcessComparator;
 
 public class PopupController {
     @FXML
@@ -132,18 +132,26 @@ public class PopupController {
                         //if the strategy is round robin time,sort the readyQueue every time you add new process
                         //dispatcher.getReadyQueue().sort(new PriorityComparator(0));
                       //if the strategy is round robin time,sort the synchronizedreadyQueue every time you add new process
-                        dispatcher.getSynchronizeReadyQueue().sort(new PriorityComparator(0));
+                        dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(0));
                         
                     }else if("最短进程优先(SPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
                      // if the strategy is round robin time,sort the readyQueue according to the serviceTime every time you add new process
                         //dispatcher.getReadyQueue().sort(new PriorityComparator(1));
                      // if the strategy is round robin time,sort the synchronizedreadyQueue according to the serviceTime every time you add new process
-                        dispatcher.getSynchronizeReadyQueue().sort(new PriorityComparator(1));
+                        dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(1));
                     }else if("最短剩余时间(SRT)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
                         //sort the ready queue according to the remaining time;
                         //dispatcher.getReadyQueue().sort(new PriorityComparator(2));
                         //sort the ready queue according to the remaining time;
-                        dispatcher.getSynchronizeReadyQueue().sort(new PriorityComparator(2));
+                        dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(2));
+                    }
+                    else if("先来先服务(FCFS)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                        
+                    }
+                    else if("时间片轮转(RR)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                        
+                    }else if("最高向颖彬(HRRN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                        dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(2));
                     }
                 }
                 dispatcher.setFinishAdd(true);

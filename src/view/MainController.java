@@ -22,7 +22,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.text.Text;
 import model.ProcessPCB;
-import util.PriorityComparator;
+import util.ProcessComparator;
 
 public class MainController {
     private Dispatcher dispatcher;
@@ -178,7 +178,9 @@ public class MainController {
     private boolean sureReset;
     // sure whether exit
     private boolean sureExit;
-
+    //the textfield of time slice
+    @FXML
+    private TextField timeSlicField;
     /**
      * this method will be auto-called after the construction to set the some
      * initial data
@@ -219,6 +221,7 @@ public class MainController {
         schedulingStrategy.getItems().add("最短进程优先(SPN)");
         schedulingStrategy.getItems().add("最短剩余时间(SRT)");
         schedulingStrategy.getItems().add("先来先服务(FCFS)");
+        schedulingStrategy.getItems().add("最高响应比(HRRN)");
         isContention.setItems(FXCollections.observableArrayList());
         isContention.getItems().add("抢占");
         isContention.getItems().add("非抢占");
@@ -241,6 +244,35 @@ public class MainController {
         newProName.focusedProperty().addListener((arg0, oldPropertyValue, newPropertyValue) -> {
             if (newPropertyValue) {
                 proNameTip.setVisible(false);
+            }
+
+        });
+        schedulingStrategy.valueProperty().addListener((arg0, oldPropertyValue, newPropertyValue) -> {
+            if (newPropertyValue != null) {
+                if("时间片轮转(RR)".equals(newPropertyValue)) {
+                    isContention.setValue("抢占");
+                    isContention.setDisable(true);
+                    timeSlicField.setDisable(false);
+                }else if("最短进程优先(SPN)".equals(newPropertyValue)) {
+                    isContention.setValue("非抢占");
+                    isContention.setDisable(true);
+                    timeSlicField.setDisable(true);
+                }else if("优先数调度(HPN)".equals(newPropertyValue)) {
+                    isContention.setDisable(false);
+                    timeSlicField.setDisable(true);
+                }else if("最短剩余时间(SRT)".equals(newPropertyValue)) {
+                    isContention.setValue("抢占");
+                    isContention.setDisable(true);
+                    timeSlicField.setDisable(true);
+                }else if("先来先服务(FCFS)".equals(newPropertyValue)) {
+                    isContention.setValue("非抢占");
+                    isContention.setDisable(true);
+                    timeSlicField.setDisable(true);
+                }else if("最高响应比(HRRN)".equals(newPropertyValue)) {
+                    isContention.setValue("非抢占");
+                    isContention.setDisable(true);
+                    timeSlicField.setDisable(true);
+                }
             }
 
         });
@@ -399,6 +431,7 @@ public class MainController {
             isContention.setValue("抢占");
             dispatcher.setContention(false);
             dispatcher.setSchedulingStrategy(0);
+          
 
         } else if ("优先数调度(HPN)".equals(scheduleModel)) {
             if ("非抢占".equals(contention))
@@ -414,6 +447,14 @@ public class MainController {
             isContention.setValue("抢占");
             dispatcher.setContention(true);
             dispatcher.setSchedulingStrategy(3);
+        }else if("先来先服务(FCFS)".equals(scheduleModel)) {
+            isContention.setValue("非抢占");
+            dispatcher.setContention(false);
+            dispatcher.setSchedulingStrategy(4);
+        }else if("最高响应比(HRRN)".equals(scheduleModel)) {
+            isContention.setValue("非抢占");
+            dispatcher.setContention(false);
+            dispatcher.setSchedulingStrategy(5);
         }
 
         // dispatcher.rrDispatcher();
@@ -440,8 +481,10 @@ public class MainController {
              * principle and find the answer from the graph of five state if you
              * don't understand
              */
-
+            
+           
             if (dispatcher.iSFirstThread()) {
+                dispatcher.getDispathThread().setDaemon(true);
                 dispatcher.getDispathThread().start();
                 dispatcher.setIsFirstThread(false);
             } else {
@@ -451,6 +494,21 @@ public class MainController {
                 dispatcher.getDispathThread().setDaemon(true);
                 dispatcher.getDispathThread().start();
             }
+            //set the time slice no matter what the schedulingStrategy is,because it
+            //won't influnence other scheduling strategy except the RR dispatch algorithm
+            //get the time slice(default value is 1)
+            String text = dispatcher.getMainController().getTimeSlicField().getText().trim();
+            int timeSlice = 0;
+            try {
+                timeSlice = Integer.parseInt(text);
+            }catch(NumberFormatException e) {
+                e.printStackTrace();
+                //if what you input is illegal,reset the time slice to the default value
+                dispatcher.getMainController().getTimeSlicField().setText("1");
+                timeSlice = 1;
+            }
+            dispatcher.setTIMESLICING(timeSlice);
+            
 
         } else {
             if ("继续".equals(pauseAndContinueButton.getText())) {
@@ -541,8 +599,8 @@ public class MainController {
         // check your input
         boolean addSuccess = false;
         String proName = newProName.getText();
-        String propriority = newProPriority.getText();
-        String proServiceTime = newProSeviceTime.getText();
+        String propriority = newProPriority.getText().trim();
+        String proServiceTime = newProSeviceTime.getText().trim();
         if (proName == null)
             proNameTip.setVisible(true);
         else
@@ -557,10 +615,10 @@ public class MainController {
         int priority = 0;
         int serviceTime = 0;
         try {
-            priority = Integer.parseInt(newProPriority.getText());
-            serviceTime = Integer.parseInt(newProSeviceTime.getText());
+            priority = Integer.parseInt(newProPriority.getText().trim());
+            serviceTime = Integer.parseInt(newProSeviceTime.getText().trim());
         } catch (NumberFormatException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
             serviceTimeTip.setVisible(true);
             priorityTip.setVisible(true);
             return;
@@ -614,7 +672,7 @@ public class MainController {
             dispatcher.setTotalServiceTime(dispatcher.getTotalServiceTime() + process.getServiceTime());
             // join in the synchronizedreadyQueue at the same time
             dispatcher.getSynchronizeReadyQueue().add(process);
-            if (dispatcher.getDispathThread().isAlive()) {
+            
                 // judge what the schedulingStrategy is and sort the queue
                 if ("优先数调度(HPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
                     // if the strategy is round robin time,sort the
@@ -623,7 +681,7 @@ public class MainController {
                     // process
                     // dispatcher.getReadyQueue().sort(new
                     // PriorityComparator(0));
-                    dispatcher.getSynchronizeReadyQueue().sort(new PriorityComparator(0));
+                    dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(0));
 
                 } else if ("最短进程优先(SPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
                     // if the strategy is round robin time,sort the
@@ -632,14 +690,20 @@ public class MainController {
                     // process
                     // dispatcher.getReadyQueue().sort(new
                     // PriorityComparator(1));
-                    dispatcher.getSynchronizeReadyQueue().sort(new PriorityComparator(1));
+                    dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(1));
                 } else if ("最短剩余时间(SRT)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
                     // sort the ready queue according to the remaining time;
                     // dispatcher.getReadyQueue().sort(new
                     // PriorityComparator(2));
-                    dispatcher.getSynchronizeReadyQueue().sort(new PriorityComparator(2));
+                    dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(2));
+                }else if("先来先服务(FCFS)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                    
+                }else if("时间片轮转(RR)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                  
+                }else if("最高响应比(HRRN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                    dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(3));
                 }
-            }
+            
             dispatcher.setFinishAdd(true);
             //System.out.println(process.getpName() + "添加时间:" + dispatcher.getTimeCounter());
 
@@ -771,4 +835,8 @@ public class MainController {
         return progressHbox;
     }
 
+    public TextField getTimeSlicField() {
+        return timeSlicField;
+    }
+    
 }

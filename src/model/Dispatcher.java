@@ -5,7 +5,7 @@ import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import util.PriorityComparator;
+import util.ProcessComparator;
 import util.Queue;
 
 public class Dispatcher {
@@ -54,7 +54,7 @@ public class Dispatcher {
                         
                         if(choice == 2) {//priority number dispatch and it's preemptive 
                             //restart sorting the ready queue according to the priority every thime you add new process to the ready queue
-                            readyQueue.sort(new PriorityComparator(0));
+                            readyQueue.sort(new ProcessComparator(0));
                            
                         }
                     }
@@ -196,7 +196,7 @@ public class Dispatcher {
         }
         // sort the readyQueue according to priority
         synchronized (LOCK) {
-            readyQueue.sort(new PriorityComparator(0));
+            readyQueue.sort(new ProcessComparator(0));
         }
         // judge if is contention
         if (!isContention) {
