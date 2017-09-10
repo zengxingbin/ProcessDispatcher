@@ -23,11 +23,10 @@ import javafx.scene.layout.HBox;
 import javafx.scene.text.Text;
 import model.ProcessPCB;
 import util.ProcessComparator;
+
 /**
  * 
- * @author 曾幸彬(bingoo)
- * email:2045620125@qq.com
- * 2017年9月10日 下午1:08:31
+ * @author 曾幸彬(bingoo) email:2045620125@qq.com 2017年9月10日 下午1:08:31
  *
  */
 public class MainController {
@@ -184,9 +183,10 @@ public class MainController {
     private boolean sureReset;
     // sure whether exit
     private boolean sureExit;
-    //the textfield of time slice
+    // the textfield of time slice
     @FXML
     private TextField timeSlicField;
+
     /**
      * this method will be auto-called after the construction to set the some
      * initial data
@@ -255,26 +255,26 @@ public class MainController {
         });
         schedulingStrategy.valueProperty().addListener((arg0, oldPropertyValue, newPropertyValue) -> {
             if (newPropertyValue != null) {
-                if("时间片轮转(RR)".equals(newPropertyValue)) {
+                if ("时间片轮转(RR)".equals(newPropertyValue)) {
                     isContention.setValue("抢占");
                     isContention.setDisable(true);
                     timeSlicField.setDisable(false);
-                }else if("最短进程优先(SPN)".equals(newPropertyValue)) {
+                } else if ("最短进程优先(SPN)".equals(newPropertyValue)) {
                     isContention.setValue("非抢占");
                     isContention.setDisable(true);
                     timeSlicField.setDisable(true);
-                }else if("优先数调度(HPN)".equals(newPropertyValue)) {
+                } else if ("优先数调度(HPN)".equals(newPropertyValue)) {
                     isContention.setDisable(false);
                     timeSlicField.setDisable(true);
-                }else if("最短剩余时间(SRT)".equals(newPropertyValue)) {
+                } else if ("最短剩余时间(SRT)".equals(newPropertyValue)) {
                     isContention.setValue("抢占");
                     isContention.setDisable(true);
                     timeSlicField.setDisable(true);
-                }else if("先来先服务(FCFS)".equals(newPropertyValue)) {
+                } else if ("先来先服务(FCFS)".equals(newPropertyValue)) {
                     isContention.setValue("非抢占");
                     isContention.setDisable(true);
                     timeSlicField.setDisable(true);
-                }else if("最高响应比(HRRN)".equals(newPropertyValue)) {
+                } else if ("最高响应比(HRRN)".equals(newPropertyValue)) {
                     isContention.setValue("非抢占");
                     isContention.setDisable(true);
                     timeSlicField.setDisable(true);
@@ -437,7 +437,6 @@ public class MainController {
             isContention.setValue("抢占");
             dispatcher.setContention(false);
             dispatcher.setSchedulingStrategy(0);
-          
 
         } else if ("优先数调度(HPN)".equals(scheduleModel)) {
             if ("非抢占".equals(contention))
@@ -453,11 +452,11 @@ public class MainController {
             isContention.setValue("抢占");
             dispatcher.setContention(true);
             dispatcher.setSchedulingStrategy(3);
-        }else if("先来先服务(FCFS)".equals(scheduleModel)) {
+        } else if ("先来先服务(FCFS)".equals(scheduleModel)) {
             isContention.setValue("非抢占");
             dispatcher.setContention(false);
             dispatcher.setSchedulingStrategy(4);
-        }else if("最高响应比(HRRN)".equals(scheduleModel)) {
+        } else if ("最高响应比(HRRN)".equals(scheduleModel)) {
             isContention.setValue("非抢占");
             dispatcher.setContention(false);
             dispatcher.setSchedulingStrategy(5);
@@ -487,34 +486,40 @@ public class MainController {
              * principle and find the answer from the graph of five state if you
              * don't understand
              */
-            
-           
+
             if (dispatcher.iSFirstThread()) {
                 dispatcher.getDispathThread().setDaemon(true);
                 dispatcher.getDispathThread().start();
+                dispatcher.getAddProcessThread().setDaemon(true);
+                dispatcher.getAddProcessThread().start();
                 dispatcher.setIsFirstThread(false);
             } else {
                 // clear the last finish queue
                 dispatcher.getFinishQueue().clear();
                 dispatcher.createNewDispatchThread();
+                dispatcher.createNewAddThread();
                 dispatcher.getDispathThread().setDaemon(true);
                 dispatcher.getDispathThread().start();
+                dispatcher.getAddProcessThread().setDaemon(true);
+                dispatcher.getAddProcessThread().start();
             }
-            //set the time slice no matter what the schedulingStrategy is,because it
-            //won't influnence other scheduling strategy except the RR dispatch algorithm
-            //get the time slice(default value is 1)
+            // set the time slice no matter what the schedulingStrategy
+            // is,because it
+            // won't influnence other scheduling strategy except the RR dispatch
+            // algorithm
+            // get the time slice(default value is 1)
             String text = dispatcher.getMainController().getTimeSlicField().getText().trim();
             int timeSlice = 0;
             try {
                 timeSlice = Integer.parseInt(text);
-            }catch(NumberFormatException e) {
+            } catch (NumberFormatException e) {
                 e.printStackTrace();
-                //if what you input is illegal,reset the time slice to the default value
+                // if what you input is illegal,reset the time slice to the
+                // default value
                 dispatcher.getMainController().getTimeSlicField().setText("1");
                 timeSlice = 1;
             }
             dispatcher.setTIMESLICING(timeSlice);
-            
 
         } else {
             if ("继续".equals(pauseAndContinueButton.getText())) {
@@ -578,8 +583,9 @@ public class MainController {
         dispatcher.setTimeCounter(0);
         dispatcher.setProcessCounter(0);
         dispatcher.setTotalServiceTime(0);
+        dispatcher.setSizeOfReadyQueue(0);
         dispatcher.setProgress(0);
-        if("继续".equals(pauseAndContinueButton.getText())) {
+        if ("继续".equals(pauseAndContinueButton.getText())) {
             pauseAndContinueButton.setText("暂停");
         }
         addButton.setDisable(false);
@@ -624,7 +630,7 @@ public class MainController {
             priority = Integer.parseInt(newProPriority.getText().trim());
             serviceTime = Integer.parseInt(newProSeviceTime.getText().trim());
         } catch (NumberFormatException e) {
-            //e.printStackTrace();
+            // e.printStackTrace();
             serviceTimeTip.setVisible(true);
             priorityTip.setVisible(true);
             return;
@@ -647,17 +653,16 @@ public class MainController {
         }
         process.setFirstTime(true);
         process.setRemainingTime(process.getServiceTime());
-        if (dispatcher.getReadyQueue().size() < dispatcher.getProcessmaxnum()) {
-            // only when the dispatch thread is alive;
-            if (dispatcher.getDispathThread().isAlive()) {
-                /*
-                 * int count = 0; while(true) { //avoid current thread to wait
-                 * all the time if(count >= 1000) break; try {
-                 * Thread.currentThread().sleep(100); } catch
-                 * (InterruptedException e) { // TODO Auto-generated catch block
-                 * e.printStackTrace(); } if(dispatcher.isAllowdAdd()) break;
-                 * count += 100; }
-                 */
+        // only when the dispatch thread is alive;
+        if (dispatcher.getDispathThread().isAlive()) {
+            /*
+             * int count = 0; while(true) { //avoid current thread to wait all
+             * the time if(count >= 1000) break; try {
+             * Thread.currentThread().sleep(100); } catch (InterruptedException
+             * e) { // TODO Auto-generated catch block e.printStackTrace(); }
+             * if(dispatcher.isAllowdAdd()) break; count += 100; }
+             */
+            if (dispatcher.getSizeOfReadyQueue() + 1 < dispatcher.getProcessmaxnum()) {
                 dispatcher.setRequestAdd(true);
                 dispatcher.setFinishAdd(false);
                 while (dispatcher.isRequestAdd()) {
@@ -668,17 +673,16 @@ public class MainController {
                         e.printStackTrace();
                     }
                 }
-            }
-            process.setArrivalTime(dispatcher.getTimeCounter());
-            // record current time
-            // dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
-            // join in the readyQueue
-            dispatcher.getReadyQueue().add(process);
-            // add a new process,so the total service time should increase
-            dispatcher.setTotalServiceTime(dispatcher.getTotalServiceTime() + process.getServiceTime());
-            // join in the synchronizedreadyQueue at the same time
-            dispatcher.getSynchronizeReadyQueue().add(process);
-            
+                process.setArrivalTime(dispatcher.getTimeCounter());
+                // record current time
+                // dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
+                // join in the readyQueue
+                dispatcher.getReadyQueue().add(process);
+                // add a new process,so the total service time should increase
+                dispatcher.setTotalServiceTime(dispatcher.getTotalServiceTime() + process.getServiceTime());
+                // join in the synchronizedreadyQueue at the same time
+                dispatcher.getSynchronizeReadyQueue().add(process);
+
                 // judge what the schedulingStrategy is and sort the queue
                 if ("优先数调度(HPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
                     // if the strategy is round robin time,sort the
@@ -702,25 +706,74 @@ public class MainController {
                     // dispatcher.getReadyQueue().sort(new
                     // PriorityComparator(2));
                     dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(2));
-                }else if("先来先服务(FCFS)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
-                    
-                }else if("时间片轮转(RR)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
-                  
-                }else if("最高响应比(HRRN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                } else if ("先来先服务(FCFS)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+
+                } else if ("时间片轮转(RR)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+
+                } else if ("最高响应比(HRRN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
                     dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(3));
                 }
-            
-            dispatcher.setFinishAdd(true);
-            //System.out.println(process.getpName() + "添加时间:" + dispatcher.getTimeCounter());
+                dispatcher.setSizeOfReadyQueue(dispatcher.getSizeOfReadyQueue() + 1);
+                dispatcher.setFinishAdd(true);
+                // System.out.println(process.getpName() + "添加时间:" +
+                // dispatcher.getTimeCounter());
+            } else {
+                // join int the wait queue
+                dispatcher.getWaitQueue().add(process);
+            }
 
-        } else {
-            // join int the wait queue
-            dispatcher.getWaitQueue().add(process);
+        }else {
+            if (dispatcher.getSizeOfReadyQueue() < dispatcher.getProcessmaxnum()) {
+                process.setArrivalTime(dispatcher.getTimeCounter());
+                // record current time
+                // dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
+                // join in the readyQueue
+                dispatcher.getReadyQueue().add(process);
+                // add a new process,so the total service time should increase
+                dispatcher.setTotalServiceTime(dispatcher.getTotalServiceTime() + process.getServiceTime());
+                // join in the synchronizedreadyQueue at the same time
+                dispatcher.getSynchronizeReadyQueue().add(process);
+
+                // judge what the schedulingStrategy is and sort the queue
+                if ("优先数调度(HPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                    // if the strategy is round robin time,sort the
+                    // readyQueue
+                    // according to the priority every time you add new
+                    // process
+                    // dispatcher.getReadyQueue().sort(new
+                    // PriorityComparator(0));
+                    dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(0));
+
+                } else if ("最短进程优先(SPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                    // if the strategy is round robin time,sort the
+                    // readyQueue
+                    // according to the serviceTime every time you add new
+                    // process
+                    // dispatcher.getReadyQueue().sort(new
+                    // PriorityComparator(1));
+                    dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(1));
+                } else if ("最短剩余时间(SRT)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                    // sort the ready queue according to the remaining time;
+                    // dispatcher.getReadyQueue().sort(new
+                    // PriorityComparator(2));
+                    dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(2));
+                } else if ("先来先服务(FCFS)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+
+                } else if ("时间片轮转(RR)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+
+                } else if ("最高响应比(HRRN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                    dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(3));
+                }
+                dispatcher.setSizeOfReadyQueue(dispatcher.getSizeOfReadyQueue() + 1);
+            }else {
+                // join int the wait queue
+                dispatcher.getWaitQueue().add(process);
+            }
         }
         // clear the text field
-        newProName.clear();
+        /*newProName.clear();
         newProPriority.clear();
-        newProSeviceTime.clear();
+        newProSeviceTime.clear();*/
     }
 
     /**
@@ -733,15 +786,16 @@ public class MainController {
         // System.out.println(dispatcher.getUpdateReadyQueue().isAlive());
         if (dispatcher.getDispathThread().isAlive()) {
             if ("暂停".equals(text)) {
-                //you can't add new process by any way when the dispatcher pasue
-                //so the add button should be disabled
+                // you can't add new process by any way when the dispatcher
+                // pasue
+                // so the add button should be disabled
                 addButton.setDisable(true);
                 randomGenButton.setDisable(true);
                 pauseAndContinueButton.setText("继续");
                 // the dispatch thread need wait
                 dispatcher.setNeedWait(true);
             } else if ("继续".equals(text)) {
-                //set the add button to be able
+                // set the add button to be able
                 addButton.setDisable(false);
                 randomGenButton.setDisable(false);
                 pauseAndContinueButton.setText("暂停");
@@ -843,6 +897,14 @@ public class MainController {
 
     public TextField getTimeSlicField() {
         return timeSlicField;
+    }
+
+    public TableView<ProcessPCB> getFinishQueue() {
+        return finishQueue;
+    }
+
+    public TableView<ProcessPCB> getWaitQueue() {
+        return waitQueue;
     }
     
 }

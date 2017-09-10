@@ -142,7 +142,78 @@ public class Dispatcher extends Application {
     private boolean addSignal3;
     private boolean sortSignal3;
     private boolean waitSignal3;
+    /*
+     * record the size of readyQueue
+     * when dispatching the process 
+     * the size of readyQueue may be change 
+     * but actually ,the size of readyQueue did't change at all
+     */
+    private int sizeOfReadyQueue = 0;
+    class AddProcessRun implements Runnable {
 
+        @Override
+        public void run() {
+            System.out.println("start the add thread");
+            while(true) {
+                //when the dispatch thread is over ,this should be over
+                if(!dispathThread.isAlive())
+                    break;
+                /*
+                 * every time the size of finishQueue isn't equal to the finishNum
+                 * that is say a process of readyQueue has finished
+                 * add process of waitqueue to the readyqueue at the
+                 * same time,record the last finishQueue's size
+                 */
+                if(sizeOfReadyQueue < PROCESSMAXNUM && !waitQueue.isEmpty()) {
+                    //finishNum = finishQueue.size();
+                    //send add signal to the dispatch thread
+                    isRequestAdd = true;
+                    while(isRequestAdd) {
+                        try {
+                            Thread.currentThread().sleep(100);
+                        } catch (InterruptedException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                    }
+                    ProcessPCB pro = waitQueue.remove(0);
+                    totalServiceTime += pro.getServiceTime();
+                    pro.setArrivalTime(timeCounter);
+                    readyQueue.add(pro);
+                    synchronizeReadyQueue.add(pro);
+                    
+                 // judge what the schedulingStrategy is and sort the queue
+                    if ("优先数调度(HPN)".equals(mainController.getSchedulingStrategy().getValue())) {
+                        
+                        synchronizeReadyQueue.sort(new ProcessComparator(0));
+
+                    } else if ("最短进程优先(SPN)".equals(mainController.getSchedulingStrategy().getValue())) {
+                        
+                        synchronizeReadyQueue.sort(new ProcessComparator(1));
+                    } else if ("最短剩余时间(SRT)".equals(mainController.getSchedulingStrategy().getValue())) {
+                        
+                        synchronizeReadyQueue.sort(new ProcessComparator(2));
+                    } else if ("先来先服务(FCFS)".equals(mainController.getSchedulingStrategy().getValue())) {
+
+                    } else if ("时间片轮转(RR)".equals(mainController.getSchedulingStrategy().getValue())) {
+
+                    } else if ("最高响应比(HRRN)".equals(mainController.getSchedulingStrategy().getValue())) {
+                        synchronizeReadyQueue.sort(new ProcessComparator(3));
+                    }
+                    
+                    sizeOfReadyQueue++;
+                    isFinishAdd = true;
+                    try {
+                        Thread.currentThread().sleep(1000);
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        
+    }
     class DispatchRun implements Runnable {
 
         @Override
@@ -182,6 +253,8 @@ public class Dispatcher extends Application {
             //finsht dispatch,reset the progress bar
             //reset totalServiceTime
             totalServiceTime = 0;
+            //reset the size of readyqueue
+            sizeOfReadyQueue = 0;
             // reset the processCounter
             mainController.getProgressHbox().setVisible(false);
             mainController.getRunProcessText().setText("");
@@ -303,7 +376,6 @@ public class Dispatcher extends Application {
                     //clear the ready queue and the synchronize ready queue
                     readyQueue.clear();
                     synchronizeReadyQueue.clear();
-                    
                     return;
                 }
                 // dispatch thread suspend
@@ -326,6 +398,7 @@ public class Dispatcher extends Application {
                             e.printStackTrace();
                         }
                     }
+                    isFinishAdd = false;
                     //System.out.println("添加完成，当前时间:" + timeCounter);
                 }
                 /*if (!readyQueue.isEmpty()) {
@@ -364,6 +437,8 @@ public class Dispatcher extends Application {
                     process.setFinish(true);
                     //add the current process to the finish queue
                     finishQueue.add(process);
+                    
+                    sizeOfReadyQueue--;
                     if(timeSlicing >= TIMESLICING) {
                         timeSlicing = 0;
                     }
@@ -483,8 +558,24 @@ public class Dispatcher extends Application {
                     mainController.getProgressBar().setProgress(progress);
                     mainController.getPercentage().setText("    " + String.format("%.1f", progress * 100) + "%");
                     // other process wait for the currnet process to finish
-                    for (ProcessPCB process : readyQueue)
-                        process.setWaitTime(process.getWaitTime() + 1);
+                    /*for (ProcessPCB process : readyQueue)
+                        process.setWaitTime(process.getWaitTime() + 1);*/
+                    ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
+                    for(ProcessPCB process :readyQueue) {
+                        try {
+                            ProcessPCB processPCB = (ProcessPCB) process.clone();
+                            processPCB.setWaitTime(processPCB.getWaitTime()+1);
+                            readyQueueTemp.add(processPCB);
+                        } catch (CloneNotSupportedException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                    }
+                    readyQueue.clear();
+                    readyQueue.addAll(readyQueueTemp);
+                    synchronizeReadyQueue.clear();
+                    synchronizeReadyQueue.addAll(readyQueue);
+                    synchronizeReadyQueue.sort(new ProcessComparator(0));
                     //isAllowdAdd = true;
                     // if the clearSignal is true,end the thread
                     if (clearSignal) {
@@ -515,6 +606,7 @@ public class Dispatcher extends Application {
                                 e.printStackTrace();
                             }
                         }
+                        isFinishAdd = false;
                         //System.out.println("添加完成，当前时间:" + timeCounter);
                     }
                     //synchronize with the readyQueue
@@ -535,6 +627,7 @@ public class Dispatcher extends Application {
                         // join to the finishQueue
                         // finishQueue.addFirst(process);
                         finishQueue.add(process);
+                        sizeOfReadyQueue--;
                         process.setFinish(true);
                         // process = null;
                         if (readyQueue.isEmpty()) {
@@ -631,9 +724,24 @@ public class Dispatcher extends Application {
                     mainController.getProgressBar().setProgress(progress);
                     mainController.getPercentage().setText("    " + String.format("%.1f", progress * 100) + "%");
                     // other process wait for the currnet process to finish
-                    for (ProcessPCB process : readyQueue)
-                        process.setWaitTime(process.getWaitTime() + 1);
-                    
+                    /*for (ProcessPCB process : readyQueue)
+                        process.setWaitTime(process.getWaitTime() + 1);*/
+                    ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
+                    for(ProcessPCB process :readyQueue) {
+                        try {
+                            ProcessPCB processPCB = (ProcessPCB) process.clone();
+                            processPCB.setWaitTime(processPCB.getWaitTime()+1);
+                            readyQueueTemp.add(processPCB);
+                        } catch (CloneNotSupportedException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                    }
+                    readyQueue.clear();
+                    readyQueue.addAll(readyQueueTemp);
+                    synchronizeReadyQueue.clear();
+                    synchronizeReadyQueue.addAll(readyQueue);
+                    synchronizeReadyQueue.sort(new ProcessComparator(0));
                     //isAllowdAdd = true;
                     // if the clearSignal is true,end the thread
                     if (clearSignal) {
@@ -664,6 +772,7 @@ public class Dispatcher extends Application {
                                 e.printStackTrace();
                             }
                         }
+                        isFinishAdd = false;
                     }
                     /*for(ProcessPCB process : synchronizeReadyQueue)
                         process.setWaitTime(process.getWaitTime() + 1);*/
@@ -681,6 +790,7 @@ public class Dispatcher extends Application {
                         process.setStatus(2);// represents process completed
                         // join to the finishQueue
                         finishQueue.add(process);
+                        sizeOfReadyQueue--;
                         process.setFinish(true);
                         if (readyQueue.isEmpty()) {
                             // process = null;
@@ -812,8 +922,28 @@ public class Dispatcher extends Application {
                 mainController.getProgressBar().setProgress(progress);
                 mainController.getPercentage().setText("    " + String.format("%.1f", progress * 100) + "%");
                 // other process wait for the currnet process to finish
-                for (ProcessPCB process : readyQueue)
-                    process.setWaitTime(process.getWaitTime() + 1);
+                /*for (ProcessPCB process : readyQueue)
+                    process.setWaitTime(process.getWaitTime() + 1);*/
+                ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
+                for(ProcessPCB process :readyQueue) {
+                    try {
+                        ProcessPCB processPCB = (ProcessPCB) process.clone();
+                        processPCB.setWaitTime(processPCB.getWaitTime()+1);
+                        readyQueueTemp.add(processPCB);
+                    } catch (CloneNotSupportedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+                readyQueue.clear();
+                readyQueue.addAll(readyQueueTemp);
+                synchronizeReadyQueue.clear();
+                synchronizeReadyQueue.addAll(readyQueue);
+                if(!isContention) {
+                    synchronizeReadyQueue.sort(new ProcessComparator(1));
+                }else {
+                    synchronizeReadyQueue.sort(new ProcessComparator(2));
+                }
                 //isAllowdAdd = true;
                 // if the clearSignal is true,end the thread
                 if (clearSignal) {
@@ -844,6 +974,7 @@ public class Dispatcher extends Application {
                             e.printStackTrace();
                         }
                     }
+                    isFinishAdd = false;
                 }
                 /*for(ProcessPCB process : synchronizeReadyQueue)
                     process.setWaitTime(process.getWaitTime() + 1);*/
@@ -862,6 +993,7 @@ public class Dispatcher extends Application {
                     // join to the finishQueue
                     // finishQueue.addFirst(process);
                     finishQueue.add(process);
+                    sizeOfReadyQueue--;
                     process.setFinish(true);
                     // process = null;
                     if (readyQueue.isEmpty()) {
@@ -987,8 +1119,24 @@ public class Dispatcher extends Application {
                 mainController.getProgressBar().setProgress(progress);
                 mainController.getPercentage().setText("    " + String.format("%.1f", progress * 100) + "%");
                 // other process wait for the currnet process to finish
-                for (ProcessPCB process : readyQueue)
-                    process.setWaitTime(process.getWaitTime() + 1);
+                /*for (ProcessPCB process : readyQueue)
+                    process.setWaitTime(process.getWaitTime() + 1);*/
+                ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
+                for(ProcessPCB process :readyQueue) {
+                    try {
+                        ProcessPCB processPCB = (ProcessPCB) process.clone();
+                        processPCB.setWaitTime(processPCB.getWaitTime()+1);
+                        readyQueueTemp.add(processPCB);
+                    } catch (CloneNotSupportedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+                readyQueue.clear();
+                readyQueue.addAll(readyQueueTemp);
+                synchronizeReadyQueue.clear();
+                synchronizeReadyQueue.addAll(readyQueue);
+                //synchronizeReadyQueue.sort(new ProcessComparator(mode));
                 //isAllowdAdd = true;
                 // if the clearSignal is true,end the thread
                 if (clearSignal) {
@@ -1019,6 +1167,7 @@ public class Dispatcher extends Application {
                             e.printStackTrace();
                         }
                     }
+                    isFinishAdd = false;
                 }
                 /*for(ProcessPCB process : synchronizeReadyQueue)
                     process.setWaitTime(process.getWaitTime() + 1);*/
@@ -1037,6 +1186,7 @@ public class Dispatcher extends Application {
                     // join to the finishQueue
                     // finishQueue.addFirst(process);
                     finishQueue.add(process);
+                    sizeOfReadyQueue--;
                     process.setFinish(true);
                     // process = null;
                     if (readyQueue.isEmpty()) {
@@ -1137,8 +1287,24 @@ public class Dispatcher extends Application {
                 mainController.getProgressBar().setProgress(progress);
                 mainController.getPercentage().setText("    " + String.format("%.1f", progress * 100) + "%");
                 // other process wait for the currnet process to finish
-                for (ProcessPCB process : readyQueue)
-                    process.setWaitTime(process.getWaitTime() + 1);
+                /*for (ProcessPCB process : readyQueue)
+                    process.setWaitTime(process.getWaitTime() + 1);*/
+                ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
+                for(ProcessPCB process :readyQueue) {
+                    try {
+                        ProcessPCB processPCB = (ProcessPCB) process.clone();
+                        processPCB.setWaitTime(processPCB.getWaitTime()+1);
+                        readyQueueTemp.add(processPCB);
+                    } catch (CloneNotSupportedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+                readyQueue.clear();
+                readyQueue.addAll(readyQueueTemp);
+                synchronizeReadyQueue.clear();
+                synchronizeReadyQueue.addAll(readyQueue);
+                synchronizeReadyQueue.sort(new ProcessComparator(3));
                 //isAllowdAdd = true;
                 // if the clearSignal is true,end the thread
                 if (clearSignal) {
@@ -1169,6 +1335,7 @@ public class Dispatcher extends Application {
                             e.printStackTrace();
                         }
                     }
+                    isFinishAdd = false;
                 }
                 /*for(ProcessPCB process : synchronizeReadyQueue)
                     process.setWaitTime(process.getWaitTime() + 1);*/
@@ -1187,6 +1354,7 @@ public class Dispatcher extends Application {
                     // join to the finishQueue
                     // finishQueue.addFirst(process);
                     finishQueue.add(process);
+                    sizeOfReadyQueue--;
                     process.setFinish(true);
                     // process = null;
                     if (readyQueue.isEmpty()) {
@@ -1231,7 +1399,8 @@ public class Dispatcher extends Application {
             JOptionPane.showMessageDialog(null, "所有进程调度完成！", "提示", JOptionPane.WARNING_MESSAGE);
         }
     }
-
+    //this thread is responsible for adding the process in waitqueue to readyQueue dynamically
+    private Thread addProcessThread = new Thread(new AddProcessRun());
     public Dispatcher() {
         // create popup Stage
         popupStage = new Stage();
@@ -1528,6 +1697,21 @@ public class Dispatcher extends Application {
     public static void setTIMESLICING(int tIMESLICING) {
         TIMESLICING = tIMESLICING;
     }
+
+    public Thread getAddProcessThread() {
+        return addProcessThread;
+    }
     
+    public void createNewAddThread() {
+        addProcessThread = new Thread(new AddProcessRun());
+    }
+
+    public int getSizeOfReadyQueue() {
+        return sizeOfReadyQueue;
+    }
+
+    public void setSizeOfReadyQueue(int sizeOfReadyQueue) {
+        this.sizeOfReadyQueue = sizeOfReadyQueue;
+    }
     
 }

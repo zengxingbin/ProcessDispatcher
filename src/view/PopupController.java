@@ -92,11 +92,11 @@ public class PopupController {
             process.setFirstTime(true);
             process.setServiceTime(rand.nextInt(10) + 1);
             process.setRemainingTime(process.getServiceTime());
-            // join in the readyQueue
-            if (dispatcher.getReadyQueue().size() < dispatcher.getProcessmaxnum()) {
+            /*// join in the readyQueue
+            if (dispatcher.getReadyQueue().size() + dispatcher.getRunningProcess().size() < dispatcher.getProcessmaxnum()) {
                 //process.setArrivalTime((int) (dispatcher.getCurrentTime() - dispatcher.getStartTime()));
                 if(!isFirstPopup && dispatcher.getDispathThread().isAlive()) {
-                    /*int count = 0;
+                    int count = 0;
                     while(true) {
                         //avoid current thread to wait all the time 
                           if(count >= 1000)
@@ -110,7 +110,7 @@ public class PopupController {
                           count += 100;
                           if(dispatcher.isAllowdAdd())
                               break;
-                      }*/
+                      }
                     dispatcher.setRequestAdd(true);
                     while(dispatcher.isRequestAdd()) {
                         try {
@@ -164,6 +164,123 @@ public class PopupController {
             }else {
                 //join in the wait queue
                 dispatcher.getWaitQueue().add(process);
+            }*/
+            if (dispatcher.getDispathThread().isAlive()) {
+                /*
+                 * int count = 0; while(true) { //avoid current thread to wait all
+                 * the time if(count >= 1000) break; try {
+                 * Thread.currentThread().sleep(100); } catch (InterruptedException
+                 * e) { // TODO Auto-generated catch block e.printStackTrace(); }
+                 * if(dispatcher.isAllowdAdd()) break; count += 100; }
+                 */
+                if (dispatcher.getSizeOfReadyQueue() + 1 < dispatcher.getProcessmaxnum()) {
+                    dispatcher.setRequestAdd(true);
+                    dispatcher.setFinishAdd(false);
+                    while (dispatcher.isRequestAdd()) {
+                        try {
+                            Thread.currentThread().sleep(100);
+                        } catch (InterruptedException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                    }
+                    process.setArrivalTime(dispatcher.getTimeCounter());
+                    // record current time
+                    // dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
+                    // join in the readyQueue
+                    dispatcher.getReadyQueue().add(process);
+                    dispatcher.getMainController().getReadyQueue().getSelectionModel().select(process);
+                    // add a new process,so the total service time should increase
+                    dispatcher.setTotalServiceTime(dispatcher.getTotalServiceTime() + process.getServiceTime());
+                    // join in the synchronizedreadyQueue at the same time
+                    dispatcher.getSynchronizeReadyQueue().add(process);
+
+                    // judge what the schedulingStrategy is and sort the queue
+                    if ("优先数调度(HPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                        // if the strategy is round robin time,sort the
+                        // readyQueue
+                        // according to the priority every time you add new
+                        // process
+                        // dispatcher.getReadyQueue().sort(new
+                        // PriorityComparator(0));
+                        dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(0));
+
+                    } else if ("最短进程优先(SPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                        // if the strategy is round robin time,sort the
+                        // readyQueue
+                        // according to the serviceTime every time you add new
+                        // process
+                        // dispatcher.getReadyQueue().sort(new
+                        // PriorityComparator(1));
+                        dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(1));
+                    } else if ("最短剩余时间(SRT)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                        // sort the ready queue according to the remaining time;
+                        // dispatcher.getReadyQueue().sort(new
+                        // PriorityComparator(2));
+                        dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(2));
+                    } else if ("先来先服务(FCFS)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+
+                    } else if ("时间片轮转(RR)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+
+                    } else if ("最高响应比(HRRN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                        dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(3));
+                    }
+                    dispatcher.setSizeOfReadyQueue(dispatcher.getSizeOfReadyQueue() + 1);
+                    dispatcher.setFinishAdd(true);
+                    // System.out.println(process.getpName() + "添加时间:" +
+                    // dispatcher.getTimeCounter());
+                } else {
+                    // join int the wait queue
+                    dispatcher.getWaitQueue().add(process);
+                }
+
+            }else {
+                if (dispatcher.getSizeOfReadyQueue() < dispatcher.getProcessmaxnum()) {
+                    process.setArrivalTime(dispatcher.getTimeCounter());
+                    // record current time
+                    // dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
+                    // join in the readyQueue
+                    dispatcher.getReadyQueue().add(process);
+                    // add a new process,so the total service time should increase
+                    dispatcher.setTotalServiceTime(dispatcher.getTotalServiceTime() + process.getServiceTime());
+                    // join in the synchronizedreadyQueue at the same time
+                    dispatcher.getSynchronizeReadyQueue().add(process);
+
+                    // judge what the schedulingStrategy is and sort the queue
+                    if ("优先数调度(HPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                        // if the strategy is round robin time,sort the
+                        // readyQueue
+                        // according to the priority every time you add new
+                        // process
+                        // dispatcher.getReadyQueue().sort(new
+                        // PriorityComparator(0));
+                        dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(0));
+
+                    } else if ("最短进程优先(SPN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                        // if the strategy is round robin time,sort the
+                        // readyQueue
+                        // according to the serviceTime every time you add new
+                        // process
+                        // dispatcher.getReadyQueue().sort(new
+                        // PriorityComparator(1));
+                        dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(1));
+                    } else if ("最短剩余时间(SRT)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                        // sort the ready queue according to the remaining time;
+                        // dispatcher.getReadyQueue().sort(new
+                        // PriorityComparator(2));
+                        dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(2));
+                    } else if ("先来先服务(FCFS)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+
+                    } else if ("时间片轮转(RR)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+
+                    } else if ("最高响应比(HRRN)".equals(dispatcher.getMainController().getSchedulingStrategy().getValue())) {
+                        dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(3));
+                    }
+                    dispatcher.setSizeOfReadyQueue(dispatcher.getSizeOfReadyQueue() + 1);
+                }else {
+                    // join int the wait queue
+                    dispatcher.getWaitQueue().add(process);
+                }
             }
         }
        
