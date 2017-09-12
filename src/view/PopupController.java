@@ -189,7 +189,6 @@ public class PopupController {
                     // dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
                     // join in the readyQueue
                     dispatcher.getReadyQueue().add(process);
-                    dispatcher.getMainController().getReadyQueue().getSelectionModel().select(process);
                     // add a new process,so the total service time should increase
                     dispatcher.setTotalServiceTime(dispatcher.getTotalServiceTime() + process.getServiceTime());
                     // join in the synchronizedreadyQueue at the same time

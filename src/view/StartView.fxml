@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.text.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<AnchorPane prefHeight="179.0" prefWidth="353.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="view.StartController">
+   <children>
+      <Text layoutX="96.0" layoutY="51.0" strokeType="OUTSIDE" strokeWidth="0.0" text="请选择调度模式">
+         <font>
+            <Font size="23.0" />
+         </font>
+      </Text>
+      <Button layoutX="78.0" layoutY="97.0" mnemonicParsing="false" onAction="#realTimeDispath" prefHeight="30.0" prefWidth="76.0" text="实时调度" textFill="#ddad11">
+         <font>
+            <Font size="13.0" />
+         </font>
+      </Button>
+      <Button layoutX="197.0" layoutY="97.0" mnemonicParsing="false" onAction="#simulateDispatch" prefHeight="30.0" prefWidth="76.0" text="模拟调度" textFill="#ddad11">
+         <font>
+            <Font size="13.0" />
+         </font>
+      </Button>
+   </children>
+</AnchorPane>

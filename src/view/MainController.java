@@ -1,26 +1,36 @@
 package view;
 
 import java.sql.Time;
+import java.util.ArrayList;
 
+import javax.print.attribute.standard.Finishings;
 import javax.swing.JOptionPane;
 import javax.xml.crypto.dsig.spec.DigestMethodParameterSpec;
 
 import application.Dispatcher;
+import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
+import javafx.event.EventType;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.text.Text;
+import javafx.util.Callback;
 import model.ProcessPCB;
 import util.ProcessComparator;
 
@@ -29,6 +39,7 @@ import util.ProcessComparator;
  * @author 曾幸彬(bingoo) email:2045620125@qq.com 2017年9月10日 下午1:08:31
  *
  */
+
 public class MainController {
     private Dispatcher dispatcher;
     @FXML
@@ -186,7 +197,7 @@ public class MainController {
     // the textfield of time slice
     @FXML
     private TextField timeSlicField;
-
+    
     /**
      * this method will be auto-called after the construction to set the some
      * initial data
@@ -228,6 +239,7 @@ public class MainController {
         schedulingStrategy.getItems().add("最短剩余时间(SRT)");
         schedulingStrategy.getItems().add("先来先服务(FCFS)");
         schedulingStrategy.getItems().add("最高响应比(HRRN)");
+        schedulingStrategy.getItems().add("反馈(FB)");
         isContention.setItems(FXCollections.observableArrayList());
         isContention.getItems().add("抢占");
         isContention.getItems().add("非抢占");
@@ -278,10 +290,76 @@ public class MainController {
                     isContention.setValue("非抢占");
                     isContention.setDisable(true);
                     timeSlicField.setDisable(true);
+                } else if ("反馈(FB)".equals(newPropertyValue)) {
+                    isContention.setValue("抢占");
+                    isContention.setDisable(true);
+                    timeSlicField.setDisable(false);
                 }
             }
 
         });
+        Platform.runLater(new Runnable() {
+            
+            @Override
+            public void run() {
+                readyQueue.getSelectionModel().selectedItemProperty()
+                .addListener((Observable, oldValue, newValue) -> showProcessDetail(newValue,readyQueue));
+                waitQueue.getSelectionModel().selectedItemProperty()
+                .addListener((Observable, oldValue, newValue) -> showProcessDetail(newValue,waitQueue));
+                finishQueue.getSelectionModel().selectedItemProperty()
+                .addListener((Observable, oldValue, newValue) -> showProcessDetail(newValue,finishQueue));
+                runningTable.getSelectionModel().selectedItemProperty()
+                .addListener((Observable, oldValue, newValue) -> showProcessDetail(newValue,runningTable));
+               
+            }
+        });
+
+    }
+    public void removeTableListener() {
+        readyQueue.getSelectionModel().selectedItemProperty().removeListener((Observable, oldValue, newValue) -> showProcessDetail(newValue,readyQueue));
+        waitQueue.getSelectionModel().selectedItemProperty().removeListener((Observable, oldValue, newValue) -> showProcessDetail(newValue,waitQueue));
+        finishQueue.getSelectionModel().selectedItemProperty().removeListener((Observable, oldValue, newValue) -> showProcessDetail(newValue,finishQueue));
+        runningTable.getSelectionModel().selectedItemProperty().removeListener((Observable, oldValue, newValue) -> showProcessDetail(newValue,runningTable));
+    }
+    public void showProcessDetail(ProcessPCB process,TableView<ProcessPCB> queue) {
+        ProcessDetailController controller = dispatcher.getProcessController();
+        try {
+
+            controller.getProcessIdLabel().setText(Integer.toString(process.getPid()));
+
+            controller.getName().setText(process.getpName());
+            controller.getPriority().setText(Integer.toString(process.getPriority()));
+            controller.getProcessArrivalTimeLabel().setText(Integer.toString(process.getArrivalTime()));
+            controller.getServiceTime().setText(Integer.toString(process.getServiceTime()));
+            controller.getProcessStartTimeLabel().setText(process.getStartTimeProperty().getValue());
+            controller.getProcessWaitTimeLabel().setText(Integer.toString(process.getWaitTime()));
+            controller.getProcessRunTimeLabel().setText(process.getRunTimeproperty().getValue());
+            controller.getProcessRemainTimeLabel().setText(Integer.toString(process.getRemainingTime()));
+        } catch (Exception e) {
+
+        }
+        System.out.println();
+        controller.setProcess(queue.getSelectionModel().getSelectedItem());
+        if (dispatcher.getDispathThread().isAlive() || queue == finishQueue || queue == runningTable) {
+            controller.getName().setDisable(true);
+            controller.getServiceTime().setDisable(true);
+            controller.getPriority().setDisable(true);
+        }
+        if(!queue.getItems().isEmpty())
+            dispatcher.getProcessStage().show();
+        /*Platform.runLater(new Runnable() {
+            
+            @Override
+            public void run() {
+                // TODO Auto-generated method stub
+                //dispatcher.getProcessStage().close();
+                if(!queue.getItems().isEmpty())
+                    dispatcher.getProcessStage().show();
+                
+            }
+        });*/
+        //queue.getSelectionModel().clearSelection();
+        
     }
 
     public void setInitialData() {
@@ -417,7 +495,7 @@ public class MainController {
             JOptionPane.showMessageDialog(null, "就绪队列中无任何进程，请先创建一些进程！", "提示", JOptionPane.WARNING_MESSAGE);
             return;
         }
-
+        readyQueue.setEditable(false);
         // gain the scheduling strategy
         String scheduleModel = schedulingStrategy.getValue();
         // gain the contention strategy
@@ -460,6 +538,10 @@ public class MainController {
             isContention.setValue("非抢占");
             dispatcher.setContention(false);
             dispatcher.setSchedulingStrategy(5);
+        } else if ("反馈(FB)".equals(scheduleModel)) {
+            isContention.setValue("抢占");
+            dispatcher.setContention(false);
+            dispatcher.setSchedulingStrategy(6);
         }
 
         // dispatcher.rrDispatcher();
@@ -553,6 +635,7 @@ public class MainController {
 
         // at the begining,sure the value of sureRest is false
         sureReset = false;
+       
         if (dispatcher.getDispathThread().isAlive()) {
             // suspend the dispatch thread when the tip view appear
             dispatcher.setNeedWait(true);
@@ -590,6 +673,7 @@ public class MainController {
         }
         addButton.setDisable(false);
         randomGenButton.setDisable(false);
+        //removeTableListener();
     }
 
     /**
@@ -722,7 +806,7 @@ public class MainController {
                 dispatcher.getWaitQueue().add(process);
             }
 
-        }else {
+        } else {
             if (dispatcher.getSizeOfReadyQueue() < dispatcher.getProcessmaxnum()) {
                 process.setArrivalTime(dispatcher.getTimeCounter());
                 // record current time
@@ -765,15 +849,15 @@ public class MainController {
                     dispatcher.getSynchronizeReadyQueue().sort(new ProcessComparator(3));
                 }
                 dispatcher.setSizeOfReadyQueue(dispatcher.getSizeOfReadyQueue() + 1);
-            }else {
+            } else {
                 // join int the wait queue
                 dispatcher.getWaitQueue().add(process);
             }
         }
         // clear the text field
-        /*newProName.clear();
-        newProPriority.clear();
-        newProSeviceTime.clear();*/
+        /*
+         * newProName.clear(); newProPriority.clear(); newProSeviceTime.clear();
+         */
     }
 
     /**
@@ -884,6 +968,7 @@ public class MainController {
     }
 
     public ProgressBar getProgressBar() {
+
         return progressBar;
     }
 
@@ -906,5 +991,5 @@ public class MainController {
     public TableView<ProcessPCB> getWaitQueue() {
         return waitQueue;
     }
-    
+
 }

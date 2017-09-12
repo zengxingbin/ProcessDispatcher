@@ -1,6 +1,11 @@
 package model;
 
 import javafx.beans.property.StringProperty;
+
+import java.security.GeneralSecurityException;
+
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 /**
  * 
@@ -219,7 +224,9 @@ public class ProcessPCB implements Cloneable{
     public StringProperty getLineProperty() {
         return new SimpleStringProperty("----------");
     }
-
+    public IntegerProperty getIntegerProperty() {
+        return new SimpleIntegerProperty();
+    }
     @Override
     public String toString() {
         return "ProcessPCB [pid=" + pid + ", pName=" + pName + ", status=" + status + ", priority=" + priority

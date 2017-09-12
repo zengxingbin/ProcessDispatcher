@@ -13,12 +13,15 @@ import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXMLLoader;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import model.ProcessPCB;
 import util.ProcessComparator;
 import util.Queue;
 import view.MainController;
 import view.PopupController;
+import view.ProcessDetailController;
+import view.StartController;
 import view.WarningController;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -42,10 +45,13 @@ public class Dispatcher extends Application {
     private final static int PROCESSMAXNUM = 10;// maximum number of processe
                                                 // allowed
     private static int TIMESLICING = 1;// time slice
+    private Stage startStage;
     private Stage mainStage;
     private Scene mainScene;
     private Stage popupStage;
     private Stage warnStage;
+    private Stage processStage;
+    private ProcessDetailController processController;
     private PopupController popupController;
     private MainController mainController;
     private WarningController warnController;
@@ -261,6 +267,7 @@ public class Dispatcher extends Application {
             mainController.getPercentage().setText("    0%");
             mainController.getProgressBar().setProgress(0);
             progress = 0;
+            mainController.getReadyQueue().setEditable(true);
         }
 
         public void rrDispatcher() {
@@ -1398,15 +1405,213 @@ public class Dispatcher extends Application {
          // give a tip of finishing the dispatch
             JOptionPane.showMessageDialog(null, "所有进程调度完成！", "提示", JOptionPane.WARNING_MESSAGE);
         }
+        //feedback dispatch
+        public void FBDispatch() {
+            int timeSlicing = 0;
+            if (!readyQueue.isEmpty()) {
+                process = synchronizeReadyQueue.remove(0);
+                readyQueue.remove(process);
+                // add the process to running table
+                runningProcess.add(process);
+                /*
+                 * startTime = System.currentTimeMillis() / 1000; currentTime =
+                 * startTime;
+                 */
+                process.setStartTime(timeCounter);
+                process.setFirstTime(false);
+                process.setHasRun(true);
+                mainController.getRunProcessText().setText(process.getpName());
+            } else {
+                System.out.println("There is no  process in ready queue! ");
+                JOptionPane.showMessageDialog(null, "就绪队列中无任何进程，请先创建一些进程！", "提示", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            while (true) {
+
+                /*when current process has't run for a competed a unit of time
+                 *it is not allowed to add new process to the reayd queue in order 
+                 *to make sure the time is right
+                 */
+                //isAllowdAdd = false;
+                process.setStatus(1);// 1 represents running
+                process.setRunTime(process.getRunTime() + 1);
+                process.setRemainingTime(process.getRemainingTime() - 1);
+                System.out.println("**Currnet running process:" + process + "**");
+                // update the runningprocess,the runningprocess list will be
+                // updated only the quote of current process is changed
+                runningProcess.remove(0);
+                try {
+                    process = (ProcessPCB) process.clone();
+                    runningProcess.add(process);
+                } catch (CloneNotSupportedException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                }
+                // current process has run for one seconds,increase the time
+                // slicing
+                try {
+                    Thread.currentThread().sleep(1000);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                // increase the time counter
+                timeCounter++;
+                progress = (timeCounter * 1.0) / totalServiceTime;
+    
+                mainController.getProgressBar().setProgress(progress);
+                mainController.getPercentage().setText("    " + String.format("%.1f", progress * 100) + "%");
+                
+                timeSlicing++;
+                // other process wait for the time slicing
+                /*for (ProcessPCB process : readyQueue) {
+                    process.setWaitTime(process.getWaitTime() + 1);
+                }*/
+                ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
+                for(ProcessPCB process :readyQueue) {
+                    try {
+                        ProcessPCB processPCB = (ProcessPCB) process.clone();
+                        processPCB.setWaitTime(processPCB.getWaitTime()+1);
+                        readyQueueTemp.add(processPCB);
+                    } catch (CloneNotSupportedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+                readyQueue.clear();
+                readyQueue.addAll(readyQueueTemp);
+                synchronizeReadyQueue.clear();
+                synchronizeReadyQueue.addAll(readyQueue);
+                //synchronizeReadyQueue.sort(new ProcessComparator(mode));
+                // if the clearSignal is true,end the thread
+                if (clearSignal) {
+                    clearSignal = false;
+                    // reset the processCounter
+                    processCounter = 0;
+                    //clear the ready queue and the synchronize ready queue
+                    readyQueue.clear();
+                    synchronizeReadyQueue.clear();
+                    return;
+                }
+                // dispatch thread suspend
+                while (needWait) {
+                    try {
+                        Thread.currentThread().sleep(100);
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+
+                if(isRequestAdd) {
+                    isRequestAdd = false;
+                    while(!isFinishAdd) {
+                        try {
+                            Thread.currentThread().sleep(100);
+                        } catch (InterruptedException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                    }
+                    isFinishAdd = false;
+                    //System.out.println("添加完成，当前时间:" + timeCounter);
+                }
+                
+                if(process.getRemainingTime() == 0) {
+                    process.setEndTime(timeCounter);
+                    // compute the turnaround time
+                    process.setTurnaroundTime(process.getWaitTime() + process.getServiceTime());
+                    // compute the normalized turnaround time
+                    process.setNormalizedTurnaroundTime(
+                            (double) process.getTurnaroundTime() / process.getServiceTime());
+                    // change the status of process:finish
+                    process.setStatus(2);// represents process completed
+                    process.setFinish(true);
+                    //add the current process to the finish queue
+                    finishQueue.add(process);
+                    
+                    sizeOfReadyQueue--;
+                    if(timeSlicing >= TIMESLICING) {
+                        timeSlicing = 0;
+                    }
+                    if(!readyQueue.isEmpty()) {
+                        //get next process to be run
+                        process = synchronizeReadyQueue.remove(0);
+                        readyQueue.remove(process);
+                        runningProcess.remove(0);
+                        runningProcess.add(process);
+                        mainController.getRunProcessText().setText(process.getpName());
+                        if (process.isFirstTime()) {
+                            System.out.println(process.getpName() + "开始时间:" + timeCounter);
+                            process.setStartTime(timeCounter);
+                            process.setFirstTime(false);
+                            process.setHasRun(true);
+                            
+                        }
+                        
+                    }else {
+                        System.out.println("--All processes have been completed!--");
+                        // print the finishQueue
+                        for (ProcessPCB process : finishQueue)
+                            System.out.println(process);
+                        break;//dispatch over
+                    }
+                }else {
+                    if(timeSlicing >= TIMESLICING) {
+                        //the prioirty decrease every time the current process is preempted 
+                        process.setPriority(process.getPriority() - 1);
+                        //add current running process to the ready queue
+                        readyQueue.add(process);
+                        synchronizeReadyQueue.add(process);
+                        synchronizeReadyQueue.sort(new ProcessComparator(0));
+                        //get next process to be run ,may be still the current running process
+                        process = synchronizeReadyQueue.remove(0);
+                        readyQueue.remove(process);
+                        runningProcess.remove(0);
+                        runningProcess.add(process);
+                        mainController.getRunProcessText().setText(process.getpName());
+                        if (process.isFirstTime()) {
+                            //System.out.println(process.getpName() + "开始时间:" + timeCounter);
+                            process.setStartTime(timeCounter);
+                            process.setFirstTime(false);
+                            process.setHasRun(true);
+                            
+                        }
+                        //reset the timeslice
+                        timeSlicing = 0;
+                    }
+                }
+
+            }
+         // give a tip of finishing the dispatch
+            JOptionPane.showMessageDialog(null, "所有进程调度完成！", "提示", JOptionPane.WARNING_MESSAGE);
+        }
     }
     //this thread is responsible for adding the process in waitqueue to readyQueue dynamically
     private Thread addProcessThread = new Thread(new AddProcessRun());
     public Dispatcher() {
+        //create start stage
+        startStage = new Stage();
+        startStage.setTitle("启动程序");
+        startStage.getIcons().add(new Image("/images/scheduler.png"));
+        startStage.setResizable(false);
+        FXMLLoader fxmlLoader = new FXMLLoader();
+        fxmlLoader.setLocation(getClass().getResource("../view/StartView.fxml"));
+        Pane startPane = null;
+        try {
+            startPane = fxmlLoader.load();
+        }catch(IOException e) {
+            System.out.println("文件未发现!");
+        }
+        Scene startScene = new Scene(startPane);
+        startStage.setScene(startScene);
+        
         // create popup Stage
         popupStage = new Stage();
         popupStage.setTitle("输入提示");
         popupStage.getIcons().add(new Image("/images/tip.png"));
         popupStage.setResizable(false);
+        popupStage.initModality(Modality.WINDOW_MODAL);
         // create fxml loader to load the fxml file in order to generate the
         // pane
         FXMLLoader loader = new FXMLLoader();
@@ -1420,6 +1625,8 @@ public class Dispatcher extends Application {
         }
         // create scene with the popupPane;
         Scene popupScene = new Scene(popupPane);
+        StartController controller = fxmlLoader.getController();
+        controller.setDispatcher(this);
         // set scene on the stage
         popupStage.setScene(popupScene);
         // gain the popup controller
@@ -1429,6 +1636,7 @@ public class Dispatcher extends Application {
         warnStage = new Stage();
         warnStage.setTitle("警告");
         warnStage.getIcons().add(new Image("/images/tip.png"));
+        warnStage.initModality(Modality.WINDOW_MODAL);
         // create fxml loader to load the fxml file of waringView
         FXMLLoader loader2 = new FXMLLoader();
         loader2.setLocation(getClass().getResource("../view/WarningView.fxml"));
@@ -1462,6 +1670,23 @@ public class Dispatcher extends Application {
         mainController = loader1.getController();
         mainController.setDispatcher(this);
         mainController.setInitialData();
+        processStage = new Stage();
+        processStage.setTitle("进程信息");
+        processStage.getIcons().add(new Image("/images/tip.png"));
+        processStage.setResizable(false);
+        processStage.initModality(Modality.WINDOW_MODAL);
+        FXMLLoader loader3 = new FXMLLoader();
+        loader3.setLocation(getClass().getResource("../view/ProcessDetailView.fxml"));
+        Pane processPane = null;
+        try {
+            processPane = loader3.load();
+        }catch(IOException e) {
+            System.out.println("文件未发现!");
+        }
+        Scene processScene = new Scene(processPane);
+        processStage.setScene(processScene);
+        processController = loader3.getController();
+        processController.setDispatcher(this);
     }
 
     @Override
@@ -1479,8 +1704,12 @@ public class Dispatcher extends Application {
             mainStage.getIcons().add(new Image("images/scheduler.png"));
             mainStage.setResizable(false);
             mainStage.setScene(mainScene);
-            mainStage.show();
-            popupStage.showAndWait();
+            popupStage.initOwner(mainStage);
+            warnStage.initOwner(mainStage);
+            processStage.initOwner(mainStage);
+            //mainStage.show();
+            //popupStage.showAndWait();
+            startStage.showAndWait();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -1712,6 +1941,18 @@ public class Dispatcher extends Application {
 
     public void setSizeOfReadyQueue(int sizeOfReadyQueue) {
         this.sizeOfReadyQueue = sizeOfReadyQueue;
+    }
+
+    public Stage getStartStage() {
+        return startStage;
+    }
+
+    public Stage getProcessStage() {
+        return processStage;
+    }
+
+    public ProcessDetailController getProcessController() {
+        return processController;
     }
     
 }
