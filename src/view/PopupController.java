@@ -85,13 +85,18 @@ public class PopupController {
             ProcessPCB process = new ProcessPCB();
             // initialize process
             process.setpName("process" + dispatcher.getProcessCounter());
+            process.setpNameProperty(process.getpName());
             process.setPid(dispatcher.getProcessCounter());
+            process.setPidProperty(process.getPid());
             dispatcher.setProcessCounter(dispatcher.getProcessCounter() + 1);
             process.setPriority(rand.nextInt(20));
+            process.setPriorityProperty(process.getPriority());
             process.setStatus(0);
             process.setFirstTime(true);
             process.setServiceTime(rand.nextInt(10) + 1);
+            process.setServiceTimeProperty(process.getServiceTime());
             process.setRemainingTime(process.getServiceTime());
+            process.setRemainingTimeProperty(process.getRemainingTime());
             /*// join in the readyQueue
             if (dispatcher.getReadyQueue().size() + dispatcher.getRunningProcess().size() < dispatcher.getProcessmaxnum()) {
                 //process.setArrivalTime((int) (dispatcher.getCurrentTime() - dispatcher.getStartTime()));
@@ -185,6 +190,7 @@ public class PopupController {
                         }
                     }
                     process.setArrivalTime(dispatcher.getTimeCounter());
+                    process.setArrivalTimeProperty(process.getArrivalTime());
                     // record current time
                     // dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
                     // join in the readyQueue
@@ -236,6 +242,7 @@ public class PopupController {
             }else {
                 if (dispatcher.getSizeOfReadyQueue() < dispatcher.getProcessmaxnum()) {
                     process.setArrivalTime(dispatcher.getTimeCounter());
+                    process.setArrivalTimeProperty(process.getArrivalTime());
                     // record current time
                     // dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
                     // join in the readyQueue

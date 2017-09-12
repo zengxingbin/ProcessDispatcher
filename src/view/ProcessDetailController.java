@@ -31,7 +31,7 @@ public class ProcessDetailController {
     @FXML
     private TextField serviceTime;
     private ProcessPCB process;
-
+    private TableView<ProcessPCB> queue;
     @FXML
     public void confirmButton() {
         String errorMessage = "";
@@ -55,23 +55,23 @@ public class ProcessDetailController {
             }
             
             process.setpName(name.getText());
+            process.setpNameProperty(process.getpName());
             process.setServiceTime(Integer.parseInt(serviceTime.getText()));
+            process.setServiceTimeProperty(process.getServiceTime());
             process.setPriority(Integer.parseInt(priority.getText()));
-            System.out.println(process);
+            process.setPriorityProperty(process.getPriority());
+            
+
         }
-        name.setDisable(false);
-        serviceTime.setDisable(false);
-        priority.setDisable(false);
         dispatcher.getProcessStage().close();
+        queue.getSelectionModel().clearSelection();
         return;
     }
 
     @FXML
     public void returnButton() {
-        name.setDisable(false);
-        serviceTime.setDisable(false);
-        priority.setDisable(false);
         dispatcher.getProcessStage().close();
+        queue.getSelectionModel().clearSelection();
         return;
     }
 
@@ -118,5 +118,7 @@ public class ProcessDetailController {
     public void setProcess(ProcessPCB process) {
         this.process = process;
     }
-
+    public void setQueue(TableView<ProcessPCB> queue) {
+        this.queue = queue;
+    }
 }

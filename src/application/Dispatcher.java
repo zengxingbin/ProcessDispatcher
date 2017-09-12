@@ -10,6 +10,7 @@ import javax.swing.plaf.synth.SynthSpinnerUI;
 import com.sun.javafx.binding.StringFormatter;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXMLLoader;
@@ -268,6 +269,17 @@ public class Dispatcher extends Application {
             mainController.getProgressBar().setProgress(0);
             progress = 0;
             mainController.getReadyQueue().setEditable(true);
+            Platform.runLater(new Runnable() {
+                
+                @Override
+                public void run() {
+                    if(processStage.isShowing()) {
+                        processStage.close();
+                    }
+                    
+                }
+            });
+            
         }
 
         public void rrDispatcher() {
@@ -290,6 +302,7 @@ public class Dispatcher extends Application {
                  * startTime;
                  */
                 process.setStartTime(timeCounter);
+                process.setStartTimeProperty(process.getStartTime());
                 process.setFirstTime(false);
                 process.setHasRun(true);
                 mainController.getRunProcessText().setText(process.getpName());
@@ -327,18 +340,20 @@ public class Dispatcher extends Application {
                 //isAllowdAdd = false;
                 process.setStatus(1);// 1 represents running
                 process.setRunTime(process.getRunTime() + 1);
+                process.setRunTimeProperty(process.getRunTime());
                 process.setRemainingTime(process.getRemainingTime() - 1);
+                process.setRemainingTimeProperty(process.getRemainingTime());
                 System.out.println("**Currnet running process:" + process + "**");
                 // update the runningprocess,the runningprocess list will be
                 // updated only the quote of current process is changed
-                runningProcess.remove(0);
+                /*runningProcess.remove(0);
                 try {
                     process = (ProcessPCB) process.clone();
                     runningProcess.add(process);
                 } catch (CloneNotSupportedException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();
-                }
+                }*/
                 // current process has run for one seconds,increase the time
                 // slicing
                 try {
@@ -356,10 +371,11 @@ public class Dispatcher extends Application {
                 
                 timeSlicing++;
                 // other process wait for the time slicing
-                /*for (ProcessPCB process : readyQueue) {
+                for (ProcessPCB process : readyQueue) {
                     process.setWaitTime(process.getWaitTime() + 1);
-                }*/
-                ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
+                    process.setWaitTimeProperty(process.getWaitTime());
+                }
+                /*ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
                 for(ProcessPCB process :readyQueue) {
                     try {
                         ProcessPCB processPCB = (ProcessPCB) process.clone();
@@ -373,7 +389,7 @@ public class Dispatcher extends Application {
                 readyQueue.clear();
                 readyQueue.addAll(readyQueueTemp);
                 synchronizeReadyQueue.clear();
-                synchronizeReadyQueue.addAll(readyQueue);
+                synchronizeReadyQueue.addAll(readyQueue);*/
                 //synchronizeReadyQueue.sort(new ProcessComparator(mode));
                 // if the clearSignal is true,end the thread
                 if (clearSignal) {
@@ -434,11 +450,14 @@ public class Dispatcher extends Application {
                 
                 if(process.getRemainingTime() == 0) {
                     process.setEndTime(timeCounter);
+                    process.setEndTimeProperty(process.getEndTime());
                     // compute the turnaround time
                     process.setTurnaroundTime(process.getWaitTime() + process.getServiceTime());
+                    process.setTurnAroundTimeProperty(process.getTurnaroundTime());
                     // compute the normalized turnaround time
                     process.setNormalizedTurnaroundTime(
                             (double) process.getTurnaroundTime() / process.getServiceTime());
+                    process.setNormalizedTurnAroundTimeProperty(process.getNormalizedTurnaroundTime());
                     // change the status of process:finish
                     process.setStatus(2);// represents process completed
                     process.setFinish(true);
@@ -458,6 +477,7 @@ public class Dispatcher extends Application {
                         if (process.isFirstTime()) {
                             System.out.println(process.getpName() + "开始时间:" + timeCounter);
                             process.setStartTime(timeCounter);
+                            process.setStartTimeProperty(process.getStartTime());
                             process.setFirstTime(false);
                             process.setHasRun(true);
                             
@@ -482,6 +502,7 @@ public class Dispatcher extends Application {
                         if (process.isFirstTime()) {
                             //System.out.println(process.getpName() + "开始时间:" + timeCounter);
                             process.setStartTime(timeCounter);
+                            process.setStartTimeProperty(process.getStartTime());
                             process.setFirstTime(false);
                             process.setHasRun(true);
                             
@@ -522,11 +543,12 @@ public class Dispatcher extends Application {
                  * startTime = System.currentTimeMillis() / 1000; currentTime =
                  * startTime;
                  */
-                // add to the running process
-                runningProcess.add(process);
                 process.setStartTime(timeCounter);
+                process.setStartTimeProperty(process.getStartTime());
                 process.setHasRun(true);
                 process.setFirstTime(false);
+                // add to the running process
+                runningProcess.add(process);
                 mainController.getRunProcessText().setText(process.getpName());
                 while (true) {
                     /*// dispatch thread suspend
@@ -541,16 +563,19 @@ public class Dispatcher extends Application {
                     //isAllowdAdd = false;
                     process.setStatus(1);// 1 represents running
                     process.setRunTime(process.getRunTime() + 1);
+                    process.setRunTimeProperty(process.getRunTime());
                     process.setRemainingTime(process.getRemainingTime() - 1);
+                    process.setRemainingTimeProperty(process.getRemainingTime());
+                    process.setWaitTimeProperty(process.getWaitTime());
                     System.out.println("**Currnet running process:" + process + "**");
-                    runningProcess.remove(0);
+                    /*runningProcess.remove(0);
                     try {
                         process = (ProcessPCB) process.clone();
                         runningProcess.add(process);
                     } catch (CloneNotSupportedException e1) {
                         // TODO Auto-generated catch block
                         e1.printStackTrace();
-                    }
+                    }*/
                     // current process run for one second in every circle
                     try {
                         Thread.currentThread().sleep(1000);
@@ -565,9 +590,11 @@ public class Dispatcher extends Application {
                     mainController.getProgressBar().setProgress(progress);
                     mainController.getPercentage().setText("    " + String.format("%.1f", progress * 100) + "%");
                     // other process wait for the currnet process to finish
-                    /*for (ProcessPCB process : readyQueue)
-                        process.setWaitTime(process.getWaitTime() + 1);*/
-                    ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
+                    for (ProcessPCB process : readyQueue) {
+                        process.setWaitTime(process.getWaitTime() + 1);
+                        process.setWaitTimeProperty(process.getWaitTime());
+                    }
+                    /*ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
                     for(ProcessPCB process :readyQueue) {
                         try {
                             ProcessPCB processPCB = (ProcessPCB) process.clone();
@@ -582,7 +609,7 @@ public class Dispatcher extends Application {
                     readyQueue.addAll(readyQueueTemp);
                     synchronizeReadyQueue.clear();
                     synchronizeReadyQueue.addAll(readyQueue);
-                    synchronizeReadyQueue.sort(new ProcessComparator(0));
+                    synchronizeReadyQueue.sort(new ProcessComparator(0));*/
                     //isAllowdAdd = true;
                     // if the clearSignal is true,end the thread
                     if (clearSignal) {
@@ -624,11 +651,14 @@ public class Dispatcher extends Application {
                         // set the end time of process
                         // process.setEndTime((int) (currentTime - startTime));
                         process.setEndTime(timeCounter);
+                        process.setEndTimeProperty(process.getEndTime());
                         // compute the turnaround time
                         process.setTurnaroundTime(process.getWaitTime() + process.getServiceTime());
+                        process.setTurnAroundTimeProperty(process.getTurnaroundTime());
                         // compute the normalized turnaround time
                         process.setNormalizedTurnaroundTime(
                                 (double) process.getTurnaroundTime() / process.getServiceTime());
+                        process.setNormalizedTurnAroundTimeProperty(process.getNormalizedTurnaroundTime());
                         // change the status of process:finish
                         process.setStatus(2);// represents process completed
                         // join to the finishQueue
@@ -670,8 +700,11 @@ public class Dispatcher extends Application {
                             mainController.getRunProcessText().setText(process.getpName());
                             if (process.isFirstTime()) {
                                 process.setStartTime(timeCounter);
+                                process.setStartTimeProperty(process.getStartTime());
                                 process.setFirstTime(false);
                                 process.setHasRun(true);
+                                runningProcess.remove(0);
+                                runningProcess.add(process);
                             }
                         }
                     }
@@ -690,6 +723,7 @@ public class Dispatcher extends Application {
                  
                 runningProcess.add(process);
                 process.setStartTime(timeCounter);
+                process.setStartTimeProperty(process.getStartTime());
                 process.setHasRun(true);
                 process.setFirstTime(false);
                 mainController.getRunProcessText().setText(process.getpName());
@@ -698,7 +732,9 @@ public class Dispatcher extends Application {
                     //isAllowdAdd = false;
                     process.setStatus(1);// 1 represents running
                     process.setRunTime(process.getRunTime() + 1);
+                    process.setRunTimeProperty(process.getRunTime());
                     process.setRemainingTime(process.getRemainingTime() - 1);
+                    process.setRemainingTimeProperty(process.getRemainingTime());
                     System.out.println("**Currnet running process:" + process + "**");
                     /*// dispatch thread suspend
                     while (needWait) {
@@ -709,14 +745,14 @@ public class Dispatcher extends Application {
                             e.printStackTrace();
                         }
                     }*/
-                    runningProcess.remove(0);
+                    /*runningProcess.remove(0);
                     try {
                         process = (ProcessPCB) process.clone();
                         runningProcess.add(process);
                     } catch (CloneNotSupportedException e1) {
                         // TODO Auto-generated catch block
                         e1.printStackTrace();
-                    }
+                    }*/
                     // current process run for one second in every circle
                     try {
                         Thread.currentThread().sleep(1000);
@@ -733,7 +769,7 @@ public class Dispatcher extends Application {
                     // other process wait for the currnet process to finish
                     /*for (ProcessPCB process : readyQueue)
                         process.setWaitTime(process.getWaitTime() + 1);*/
-                    ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
+                    /*ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
                     for(ProcessPCB process :readyQueue) {
                         try {
                             ProcessPCB processPCB = (ProcessPCB) process.clone();
@@ -748,7 +784,7 @@ public class Dispatcher extends Application {
                     readyQueue.addAll(readyQueueTemp);
                     synchronizeReadyQueue.clear();
                     synchronizeReadyQueue.addAll(readyQueue);
-                    synchronizeReadyQueue.sort(new ProcessComparator(0));
+                    synchronizeReadyQueue.sort(new ProcessComparator(0));*/
                     //isAllowdAdd = true;
                     // if the clearSignal is true,end the thread
                     if (clearSignal) {
@@ -788,11 +824,14 @@ public class Dispatcher extends Application {
                         // currentTime = System.currentTimeMillis() / 1000;
                         // set the end time of process
                         process.setEndTime(timeCounter);
+                        process.setEndTimeProperty(process.getEndTime());
                         // compute the turnaround time
                         process.setTurnaroundTime(process.getWaitTime() + process.getServiceTime());
+                        process.setTurnAroundTimeProperty(process.getTurnaroundTime());
                         // compute the normalized turnaround time
                         process.setNormalizedTurnaroundTime(
                                 (double) process.getTurnaroundTime() / process.getServiceTime());
+                        process.setNormalizedTurnAroundTimeProperty(process.getNormalizedTurnaroundTime());
                         // change the status of process:finish
                         process.setStatus(2);// represents process completed
                         // join to the finishQueue
@@ -820,6 +859,7 @@ public class Dispatcher extends Application {
                             // currentTime = System.currentTimeMillis() / 1000;
                             if (process.isFirstTime()) {
                                 process.setStartTime(timeCounter);
+                                process.setStartTimeProperty(process.getStartTime());
                                 process.setFirstTime(false);
                                 process.setHasRun(true);
                             }
@@ -838,6 +878,7 @@ public class Dispatcher extends Application {
                             if (process2.getPriority() > process.getPriority()) {
                                 // current running process' prioirty decrease
                                 process.setPriority(process.getPriority() - 1);
+                                process.setPriorityProperty(process.getPriority());
                                 //add current running process to the ready queue
                                 readyQueue.add(process);
                                 synchronizeReadyQueue.add(process);
@@ -848,6 +889,7 @@ public class Dispatcher extends Application {
                                 mainController.getRunProcessText().setText(process.getpName());
                                 if (process.isFirstTime()) {
                                     process.setStartTime(timeCounter);
+                                    process.setStartTimeProperty(process.getStartTime());
                                     process.setFirstTime(false);
                                     process.setHasRun(true);
                                 }
@@ -888,6 +930,7 @@ public class Dispatcher extends Application {
             // add to the running process
             runningProcess.add(process);
             process.setStartTime(timeCounter);
+            process.setStartTimeProperty(process.getStartTime());
             process.setHasRun(true);
             process.setFirstTime(false);
             mainController.getRunProcessText().setText(process.getpName());
@@ -896,7 +939,9 @@ public class Dispatcher extends Application {
                 //isAllowdAdd = false;
                 process.setStatus(1);// 1 represents running
                 process.setRunTime(process.getRunTime() + 1);
+                process.setRunTimeProperty(process.getRunTime());
                 process.setRemainingTime(process.getRemainingTime() - 1);
+                process.setRemainingTimeProperty(process.getRemainingTime());
                 System.out.println("**Currnet running process:" + process + "**");
                 /*// dispatch thread suspend
                 while (needWait) {
@@ -907,14 +952,14 @@ public class Dispatcher extends Application {
                         e.printStackTrace();
                     }
                 }*/
-                runningProcess.remove(0);
+                /*runningProcess.remove(0);
                 try {
                     process = (ProcessPCB) process.clone();
                     runningProcess.add(process);
                 } catch (CloneNotSupportedException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();
-                }
+                }*/
                 // current process run for one second in every circle
                 try {
                     Thread.currentThread().sleep(1000);
@@ -929,9 +974,12 @@ public class Dispatcher extends Application {
                 mainController.getProgressBar().setProgress(progress);
                 mainController.getPercentage().setText("    " + String.format("%.1f", progress * 100) + "%");
                 // other process wait for the currnet process to finish
-                /*for (ProcessPCB process : readyQueue)
-                    process.setWaitTime(process.getWaitTime() + 1);*/
-                ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
+                for (ProcessPCB process : readyQueue) {
+                    process.setWaitTime(process.getWaitTime() + 1);
+                    process.setWaitTimeProperty(process.getWaitTime());
+                }
+                    
+                /*ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
                 for(ProcessPCB process :readyQueue) {
                     try {
                         ProcessPCB processPCB = (ProcessPCB) process.clone();
@@ -945,7 +993,7 @@ public class Dispatcher extends Application {
                 readyQueue.clear();
                 readyQueue.addAll(readyQueueTemp);
                 synchronizeReadyQueue.clear();
-                synchronizeReadyQueue.addAll(readyQueue);
+                synchronizeReadyQueue.addAll(readyQueue);*/
                 if(!isContention) {
                     synchronizeReadyQueue.sort(new ProcessComparator(1));
                 }else {
@@ -990,11 +1038,14 @@ public class Dispatcher extends Application {
                     // set the end time of process
                     // process.setEndTime((int) (currentTime - startTime));
                     process.setEndTime(timeCounter);
+                    process.setEndTimeProperty(process.getEndTime());
                     // compute the turnaround time
                     process.setTurnaroundTime(process.getWaitTime() + process.getServiceTime());
+                    process.setTurnAroundTimeProperty(process.getTurnaroundTime());
                     // compute the normalized turnaround time
                     process.setNormalizedTurnaroundTime(
                             (double) process.getTurnaroundTime() / process.getServiceTime());
+                    process.setNormalizedTurnAroundTimeProperty(process.getNormalizedTurnaroundTime());
                     // change the status of process:finish
                     process.setStatus(2);// represents process completed
                     // join to the finishQueue
@@ -1034,6 +1085,7 @@ public class Dispatcher extends Application {
                         mainController.getRunProcessText().setText(process.getpName());
                         if (process.isFirstTime()) {
                             process.setStartTime(timeCounter);
+                            process.setStartTimeProperty(process.getStartTime());
                             process.setFirstTime(false);
                             process.setHasRun(true);
                         }
@@ -1061,6 +1113,7 @@ public class Dispatcher extends Application {
                             mainController.getRunProcessText().setText(process.getpName());
                             if (process.isFirstTime()) {
                                 process.setStartTime(timeCounter);
+                                process.setStartTimeProperty(process.getStartTime());
                                 process.setFirstTime(false);
                                 process.setHasRun(true);
                             }
@@ -1085,6 +1138,7 @@ public class Dispatcher extends Application {
             // add to the running process
             runningProcess.add(process);
             process.setStartTime(timeCounter);
+            process.setStartTimeProperty(process.getStartTime());
             process.setHasRun(true);
             process.setFirstTime(false);
             mainController.getRunProcessText().setText(process.getpName());
@@ -1093,7 +1147,9 @@ public class Dispatcher extends Application {
                 //isAllowdAdd = false;
                 process.setStatus(1);// 1 represents running
                 process.setRunTime(process.getRunTime() + 1);
+                process.setRunTimeProperty(process.getRunTime());
                 process.setRemainingTime(process.getRemainingTime() - 1);
+                process.setRemainingTimeProperty(process.getRemainingTime());
                 System.out.println("**Currnet running process:" + process + "**");
                 /*// dispatch thread suspend
                 while (needWait) {
@@ -1104,14 +1160,14 @@ public class Dispatcher extends Application {
                         e.printStackTrace();
                     }
                 }*/
-                runningProcess.remove(0);
+               /* runningProcess.remove(0);
                 try {
                     process = (ProcessPCB) process.clone();
                     runningProcess.add(process);
                 } catch (CloneNotSupportedException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();
-                }
+                }*/
                 // current process run for one second in every circle
                 try {
                     Thread.currentThread().sleep(1000);
@@ -1126,9 +1182,12 @@ public class Dispatcher extends Application {
                 mainController.getProgressBar().setProgress(progress);
                 mainController.getPercentage().setText("    " + String.format("%.1f", progress * 100) + "%");
                 // other process wait for the currnet process to finish
-                /*for (ProcessPCB process : readyQueue)
-                    process.setWaitTime(process.getWaitTime() + 1);*/
-                ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
+                for (ProcessPCB process : readyQueue) {
+                    process.setWaitTime(process.getWaitTime() + 1);
+                    process.setWaitTimeProperty(process.getWaitTime());
+                }
+                    
+               /* ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
                 for(ProcessPCB process :readyQueue) {
                     try {
                         ProcessPCB processPCB = (ProcessPCB) process.clone();
@@ -1142,7 +1201,7 @@ public class Dispatcher extends Application {
                 readyQueue.clear();
                 readyQueue.addAll(readyQueueTemp);
                 synchronizeReadyQueue.clear();
-                synchronizeReadyQueue.addAll(readyQueue);
+                synchronizeReadyQueue.addAll(readyQueue);*/
                 //synchronizeReadyQueue.sort(new ProcessComparator(mode));
                 //isAllowdAdd = true;
                 // if the clearSignal is true,end the thread
@@ -1183,11 +1242,14 @@ public class Dispatcher extends Application {
                     // set the end time of process
                     // process.setEndTime((int) (currentTime - startTime));
                     process.setEndTime(timeCounter);
+                    process.setEndTimeProperty(process.getEndTime());
                     // compute the turnaround time
                     process.setTurnaroundTime(process.getWaitTime() + process.getServiceTime());
+                    process.setTurnAroundTimeProperty(process.getTurnaroundTime());
                     // compute the normalized turnaround time
                     process.setNormalizedTurnaroundTime(
                             (double) process.getTurnaroundTime() / process.getServiceTime());
+                    process.setNormalizedTurnAroundTimeProperty(process.getNormalizedTurnaroundTime());
                     // change the status of process:finish
                     process.setStatus(2);// represents process completed
                     // join to the finishQueue
@@ -1225,6 +1287,7 @@ public class Dispatcher extends Application {
                         mainController.getRunProcessText().setText(process.getpName());
                         if (process.isFirstTime()) {
                             process.setStartTime(timeCounter);
+                            process.setStartTimeProperty(process.getStartTime());
                             process.setFirstTime(false);
                             process.setHasRun(true);
                         }
@@ -1253,6 +1316,7 @@ public class Dispatcher extends Application {
             // add to the running process
             runningProcess.add(process);
             process.setStartTime(timeCounter);
+            process.setStartTimeProperty(process.getStartTime());
             process.setHasRun(true);
             process.setFirstTime(false);
             mainController.getRunProcessText().setText(process.getpName());
@@ -1261,7 +1325,9 @@ public class Dispatcher extends Application {
                 //isAllowdAdd = false;
                 process.setStatus(1);// 1 represents running
                 process.setRunTime(process.getRunTime() + 1);
+                process.setRunTimeProperty(process.getRunTime());
                 process.setRemainingTime(process.getRemainingTime() - 1);
+                process.setRemainingTimeProperty(process.getRemainingTime());
                 System.out.println("**Currnet running process:" + process + "**");
                 /*// dispatch thread suspend
                 while (needWait) {
@@ -1272,14 +1338,14 @@ public class Dispatcher extends Application {
                         e.printStackTrace();
                     }
                 }*/
-                runningProcess.remove(0);
+                /*runningProcess.remove(0);
                 try {
                     process = (ProcessPCB) process.clone();
                     runningProcess.add(process);
                 } catch (CloneNotSupportedException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();
-                }
+                }*/
                 // current process run for one second in every circle
                 try {
                     Thread.currentThread().sleep(1000);
@@ -1296,7 +1362,7 @@ public class Dispatcher extends Application {
                 // other process wait for the currnet process to finish
                 /*for (ProcessPCB process : readyQueue)
                     process.setWaitTime(process.getWaitTime() + 1);*/
-                ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
+               /* ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
                 for(ProcessPCB process :readyQueue) {
                     try {
                         ProcessPCB processPCB = (ProcessPCB) process.clone();
@@ -1311,7 +1377,7 @@ public class Dispatcher extends Application {
                 readyQueue.addAll(readyQueueTemp);
                 synchronizeReadyQueue.clear();
                 synchronizeReadyQueue.addAll(readyQueue);
-                synchronizeReadyQueue.sort(new ProcessComparator(3));
+                synchronizeReadyQueue.sort(new ProcessComparator(3));*/
                 //isAllowdAdd = true;
                 // if the clearSignal is true,end the thread
                 if (clearSignal) {
@@ -1351,11 +1417,14 @@ public class Dispatcher extends Application {
                     // set the end time of process
                     // process.setEndTime((int) (currentTime - startTime));
                     process.setEndTime(timeCounter);
+                    process.setEndTimeProperty(process.getEndTime());
                     // compute the turnaround time
                     process.setTurnaroundTime(process.getWaitTime() + process.getServiceTime());
+                    process.setTurnAroundTimeProperty(process.getTurnaroundTime());
                     // compute the normalized turnaround time
                     process.setNormalizedTurnaroundTime(
                             (double) process.getTurnaroundTime() / process.getServiceTime());
+                    process.setNormalizedTurnAroundTimeProperty(process.getNormalizedTurnaroundTime());
                     // change the status of process:finish
                     process.setStatus(2);// represents process completed
                     // join to the finishQueue
@@ -1395,6 +1464,7 @@ public class Dispatcher extends Application {
                         mainController.getRunProcessText().setText(process.getpName());
                         if (process.isFirstTime()) {
                             process.setStartTime(timeCounter);
+                            process.setStartTimeProperty(process.getStartTime());
                             process.setFirstTime(false);
                             process.setHasRun(true);
                         }
@@ -1418,6 +1488,7 @@ public class Dispatcher extends Application {
                  * startTime;
                  */
                 process.setStartTime(timeCounter);
+                process.setStartTimeProperty(process.getStartTime());
                 process.setFirstTime(false);
                 process.setHasRun(true);
                 mainController.getRunProcessText().setText(process.getpName());
@@ -1435,18 +1506,20 @@ public class Dispatcher extends Application {
                 //isAllowdAdd = false;
                 process.setStatus(1);// 1 represents running
                 process.setRunTime(process.getRunTime() + 1);
+                process.setRunTimeProperty(process.getRunTime());
                 process.setRemainingTime(process.getRemainingTime() - 1);
+                process.setRemainingTimeProperty(process.getRemainingTime());
                 System.out.println("**Currnet running process:" + process + "**");
                 // update the runningprocess,the runningprocess list will be
                 // updated only the quote of current process is changed
-                runningProcess.remove(0);
+                /*runningProcess.remove(0);
                 try {
                     process = (ProcessPCB) process.clone();
                     runningProcess.add(process);
                 } catch (CloneNotSupportedException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();
-                }
+                }*/
                 // current process has run for one seconds,increase the time
                 // slicing
                 try {
@@ -1464,10 +1537,11 @@ public class Dispatcher extends Application {
                 
                 timeSlicing++;
                 // other process wait for the time slicing
-                /*for (ProcessPCB process : readyQueue) {
+                for (ProcessPCB process : readyQueue) {
                     process.setWaitTime(process.getWaitTime() + 1);
-                }*/
-                ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
+                    process.setWaitTimeProperty(process.getWaitTime());
+                }
+                /*ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
                 for(ProcessPCB process :readyQueue) {
                     try {
                         ProcessPCB processPCB = (ProcessPCB) process.clone();
@@ -1481,7 +1555,7 @@ public class Dispatcher extends Application {
                 readyQueue.clear();
                 readyQueue.addAll(readyQueueTemp);
                 synchronizeReadyQueue.clear();
-                synchronizeReadyQueue.addAll(readyQueue);
+                synchronizeReadyQueue.addAll(readyQueue);*/
                 //synchronizeReadyQueue.sort(new ProcessComparator(mode));
                 // if the clearSignal is true,end the thread
                 if (clearSignal) {
@@ -1519,11 +1593,14 @@ public class Dispatcher extends Application {
                 
                 if(process.getRemainingTime() == 0) {
                     process.setEndTime(timeCounter);
+                    process.setEndTimeProperty(process.getEndTime());
                     // compute the turnaround time
                     process.setTurnaroundTime(process.getWaitTime() + process.getServiceTime());
+                    process.setTurnAroundTimeProperty(process.getTurnaroundTime());
                     // compute the normalized turnaround time
                     process.setNormalizedTurnaroundTime(
                             (double) process.getTurnaroundTime() / process.getServiceTime());
+                    process.setNormalizedTurnAroundTimeProperty(process.getNormalizedTurnaroundTime());
                     // change the status of process:finish
                     process.setStatus(2);// represents process completed
                     process.setFinish(true);
@@ -1544,6 +1621,7 @@ public class Dispatcher extends Application {
                         if (process.isFirstTime()) {
                             System.out.println(process.getpName() + "开始时间:" + timeCounter);
                             process.setStartTime(timeCounter);
+                            process.setStartTimeProperty(process.getStartTime());
                             process.setFirstTime(false);
                             process.setHasRun(true);
                             
@@ -1560,6 +1638,7 @@ public class Dispatcher extends Application {
                     if(timeSlicing >= TIMESLICING) {
                         //the prioirty decrease every time the current process is preempted 
                         process.setPriority(process.getPriority() - 1);
+                        process.setPriorityProperty(process.getPriority());
                         //add current running process to the ready queue
                         readyQueue.add(process);
                         synchronizeReadyQueue.add(process);
@@ -1573,6 +1652,7 @@ public class Dispatcher extends Application {
                         if (process.isFirstTime()) {
                             //System.out.println(process.getpName() + "开始时间:" + timeCounter);
                             process.setStartTime(timeCounter);
+                            process.setStartTimeProperty(process.getStartTime());
                             process.setFirstTime(false);
                             process.setHasRun(true);
                             

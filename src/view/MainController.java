@@ -322,42 +322,48 @@ public class MainController {
         runningTable.getSelectionModel().selectedItemProperty().removeListener((Observable, oldValue, newValue) -> showProcessDetail(newValue,runningTable));
     }
     public void showProcessDetail(ProcessPCB process,TableView<ProcessPCB> queue) {
-        ProcessDetailController controller = dispatcher.getProcessController();
-        try {
-
-            controller.getProcessIdLabel().setText(Integer.toString(process.getPid()));
-
-            controller.getName().setText(process.getpName());
-            controller.getPriority().setText(Integer.toString(process.getPriority()));
-            controller.getProcessArrivalTimeLabel().setText(Integer.toString(process.getArrivalTime()));
-            controller.getServiceTime().setText(Integer.toString(process.getServiceTime()));
-            controller.getProcessStartTimeLabel().setText(process.getStartTimeProperty().getValue());
-            controller.getProcessWaitTimeLabel().setText(Integer.toString(process.getWaitTime()));
-            controller.getProcessRunTimeLabel().setText(process.getRunTimeproperty().getValue());
-            controller.getProcessRemainTimeLabel().setText(Integer.toString(process.getRemainingTime()));
-        } catch (Exception e) {
-
-        }
-        System.out.println();
-        controller.setProcess(queue.getSelectionModel().getSelectedItem());
-        if (dispatcher.getDispathThread().isAlive() || queue == finishQueue || queue == runningTable) {
-            controller.getName().setDisable(true);
-            controller.getServiceTime().setDisable(true);
-            controller.getPriority().setDisable(true);
-        }
-        if(!queue.getItems().isEmpty())
-            dispatcher.getProcessStage().show();
-        /*Platform.runLater(new Runnable() {
+        Platform.runLater(new Runnable() {
             
             @Override
             public void run() {
-                // TODO Auto-generated method stub
-                //dispatcher.getProcessStage().close();
-                if(!queue.getItems().isEmpty())
+                ProcessDetailController controller = dispatcher.getProcessController();
+                try {
+
+                    controller.getProcessIdLabel().setText(Integer.toString(process.getPid()));
+
+                    controller.getName().setText(process.getpName());
+                    controller.getPriority().setText(Integer.toString(process.getPriority()));
+                    controller.getProcessArrivalTimeLabel().setText(Integer.toString(process.getArrivalTime()));
+                    controller.getServiceTime().setText(Integer.toString(process.getServiceTime()));
+                    controller.getProcessStartTimeLabel().setText(process.getStartTimeProperty().getValue());
+                    controller.getProcessWaitTimeLabel().setText(Integer.toString(process.getWaitTime()));
+                    controller.getProcessRunTimeLabel().setText(process.getRunTimeproperty().getValue());
+                    controller.getProcessRemainTimeLabel().setText(Integer.toString(process.getRemainingTime()));
+                } catch (Exception e) {
+
+                }
+                System.out.println();
+                controller.setProcess(process);
+                controller.setQueue(queue);
+                if (dispatcher.getDispathThread().isAlive() || queue == finishQueue || queue == runningTable) {
+                    controller.getName().setDisable(true);
+                    controller.getServiceTime().setDisable(true);
+                    controller.getPriority().setDisable(true);
+                }
+                else {
+                    controller.getName().setDisable(false);
+                    controller.getServiceTime().setDisable(false);
+                    controller.getPriority().setDisable(false);
+                }
+                if(!queue.getItems().isEmpty() && queue.getSelectionModel().getSelectedItem() != null) {
                     dispatcher.getProcessStage().show();
+                }
                 
             }
-        });*/
+        });
+        
+            
+        
         //queue.getSelectionModel().clearSelection();
         
     }
@@ -708,6 +714,7 @@ public class MainController {
         // create the new process then set the property
         ProcessPCB process = new ProcessPCB();
         process.setpName(proName);
+        process.setpNameProperty(process.getpName());
         int priority = 0;
         int serviceTime = 0;
         try {
@@ -722,8 +729,11 @@ public class MainController {
         if (!addSuccess)
             return;
         process.setPriority(priority);
+        process.setPriorityProperty(process.getPriority());
         process.setServiceTime(serviceTime);
+        process.setServiceTimeProperty(process.getServiceTime());
         process.setPid(dispatcher.getProcessCounter());
+        process.setPidProperty(process.getPid());
         dispatcher.setProcessCounter(dispatcher.getProcessCounter() + 1);
         process.setStatus(0);
         // when the dispatchThread does't start or it finish,reset the start
@@ -737,6 +747,7 @@ public class MainController {
         }
         process.setFirstTime(true);
         process.setRemainingTime(process.getServiceTime());
+        process.setRemainingTimeProperty(process.getRemainingTime());
         // only when the dispatch thread is alive;
         if (dispatcher.getDispathThread().isAlive()) {
             /*
@@ -758,6 +769,7 @@ public class MainController {
                     }
                 }
                 process.setArrivalTime(dispatcher.getTimeCounter());
+                process.setArrivalTimeProperty(process.getArrivalTime());
                 // record current time
                 // dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
                 // join in the readyQueue
@@ -809,6 +821,7 @@ public class MainController {
         } else {
             if (dispatcher.getSizeOfReadyQueue() < dispatcher.getProcessmaxnum()) {
                 process.setArrivalTime(dispatcher.getTimeCounter());
+                process.setArrivalTimeProperty(process.getArrivalTime());
                 // record current time
                 // dispatcher.setCurrentTime(System.currentTimeMillis() / 1000);
                 // join in the readyQueue

@@ -32,7 +32,21 @@ public class ProcessPCB implements Cloneable{
     private boolean isFirstTime;// is start to run first time
     private boolean isFinish;// is the process finish
     private boolean isHasRun;// Has the process run?
-
+    
+    private final StringProperty pidProperty = new SimpleStringProperty();
+    private final StringProperty pNameProperty = new SimpleStringProperty();
+    private final StringProperty priorityProperty = new SimpleStringProperty();
+    private final StringProperty arrivalTimeProperty = new SimpleStringProperty();
+    private final StringProperty startTimeProperty = new SimpleStringProperty();
+    private final StringProperty serviceTimeProperty = new SimpleStringProperty();
+    private final StringProperty endTimeProperty = new SimpleStringProperty();
+    private final StringProperty waitTimeProperty = new SimpleStringProperty();
+    private final StringProperty turnAroundTimeProperty = new SimpleStringProperty();
+    private final StringProperty normalizedTurnAroundTimeProperty = new SimpleStringProperty();
+    private final StringProperty runTimeProperty = new SimpleStringProperty();
+    private final StringProperty remainingTimeProperty = new SimpleStringProperty();
+    
+    
     public ProcessPCB() {
 
     }
@@ -170,63 +184,110 @@ public class ProcessPCB implements Cloneable{
     }
 
     public StringProperty getPidPorperty() {
-        return new SimpleStringProperty(Integer.toString(pid));
+        return pidProperty;
     }
 
     public StringProperty getPNameProperty() {
-        return new SimpleStringProperty(pName);
+        return pNameProperty;
     }
 
     public StringProperty getPriorityProperty() {
-        return new SimpleStringProperty(Integer.toString(priority));
+        return priorityProperty;
     }
 
     public StringProperty getArrivalTimeProperty() {
-        return new SimpleStringProperty(Integer.toString(arrivalTime));
+        return arrivalTimeProperty;
     }
 
     public StringProperty getServiceTimeProperty() {
-        return new SimpleStringProperty(Integer.toString(serviceTime));
+        return serviceTimeProperty;
     }
 
     public StringProperty getStartTimeProperty() {
         if (isHasRun)
-            return new SimpleStringProperty(Integer.toString(startTime));
+            return startTimeProperty;
         return new SimpleStringProperty("未开始");
     }
 
     public StringProperty getEndTimeProperty() {
-        return new SimpleStringProperty(Integer.toString(endTime));
+        return endTimeProperty;
     }
 
     public StringProperty getWaitTimeProperty() {
-        return new SimpleStringProperty(Integer.toString(waitTime));
+        return waitTimeProperty;
     }
 
     public StringProperty getTurnAroundTimeProperty() {
-        return new SimpleStringProperty(Integer.toString(turnaroundTime));
+        return turnAroundTimeProperty;
     }
 
     public StringProperty getNormalizedTurnAroundTimeProperty() {
-        return new SimpleStringProperty(Double.toString(normalizedTurnaroundTime));
+        return normalizedTurnAroundTimeProperty;
     }
 
     public StringProperty getRunTimeproperty() {
         if (isHasRun)
-            return new SimpleStringProperty(Integer.toString(runTime));
+            return runTimeProperty;
         return new SimpleStringProperty("未运行");
     }
 
     public StringProperty getRemainingTimeProperty() {
-        return new SimpleStringProperty(Integer.toString(remainingTime));
+        return remainingTimeProperty;
     }
 
     public StringProperty getLineProperty() {
         return new SimpleStringProperty("----------");
     }
-    public IntegerProperty getIntegerProperty() {
-        return new SimpleIntegerProperty();
+    
+    
+    public void setPidProperty(int pid) {
+        this.pidProperty.set(Integer.toString(pid));
     }
+
+    public void setpNameProperty(String pName) {
+        this.pNameProperty.set(pName);
+    }
+
+    public void setPriorityProperty(int priority) {
+        this.priorityProperty.set(Integer.toString(priority));
+    }
+
+    public void setArrivalTimeProperty(int arrivalTime) {
+        this.arrivalTimeProperty.set(Integer.toString(arrivalTime));
+    }
+
+    public void setStartTimeProperty(int startTime) {
+        this.startTimeProperty.set(Integer.toString(startTime));
+    }
+
+    public void setServiceTimeProperty(int serviceTime) {
+        this.serviceTimeProperty.set(Integer.toString(serviceTime));
+    }
+
+    public void setEndTimeProperty(int endTime) {
+        this.endTimeProperty.set(Integer.toString(endTime));
+    }
+
+    public void setWaitTimeProperty(int waitTime) {
+        this.waitTimeProperty.set(Integer.toString(waitTime));
+    }
+
+    public void setTurnAroundTimeProperty(int turnAroundTime) {
+        this.turnAroundTimeProperty.set(Integer.toString(turnAroundTime));
+    }
+
+    public void setNormalizedTurnAroundTimeProperty(double normalizedTurnAroundTime) {
+        this.normalizedTurnAroundTimeProperty.set(Double.toString(normalizedTurnAroundTime));
+    }
+
+    public void setRunTimeProperty(int runTime) {
+        this.runTimeProperty.set(Integer.toString(runTime));
+    }
+
+    public void setRemainingTimeProperty(int remainingTime) {
+        this.remainingTimeProperty.set(Integer.toString(remainingTime));
+    }
+
     @Override
     public String toString() {
         return "ProcessPCB [pid=" + pid + ", pName=" + pName + ", status=" + status + ", priority=" + priority
