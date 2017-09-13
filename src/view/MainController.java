@@ -339,6 +339,16 @@ public class MainController {
                     controller.getProcessWaitTimeLabel().setText(Integer.toString(process.getWaitTime()));
                     controller.getProcessRunTimeLabel().setText(process.getRunTimeproperty().getValue());
                     controller.getProcessRemainTimeLabel().setText(Integer.toString(process.getRemainingTime()));
+                    if(queue == finishQueue) {
+                        controller.getEndTime().setText(Integer.toString(process.getEndTime()));
+                        controller.getTurnAroundTime().setText(Integer.toString(process.getTurnaroundTime()));
+                        controller.getNormalizedTrunAroundTime().setText(Double.toString(process.getNormalizedTurnaroundTime()));
+                    }
+                    else {
+                        controller.getEndTime().setText("");
+                        controller.getTurnAroundTime().setText("");
+                        controller.getNormalizedTrunAroundTime().setText("");
+                    }
                 } catch (Exception e) {
 
                 }
@@ -356,6 +366,14 @@ public class MainController {
                     controller.getPriority().setDisable(false);
                 }
                 if(!queue.getItems().isEmpty() && queue.getSelectionModel().getSelectedItem() != null) {
+                    if(queue == readyQueue)
+                        dispatcher.getProcessStage().setTitle("进程信息" + "("+ "就绪队列"+")");
+                    else if(queue == waitQueue)
+                        dispatcher.getProcessStage().setTitle("进程信息" + "(" + "等待队列" + ")");
+                    else if(queue == finishQueue)
+                        dispatcher.getProcessStage().setTitle("进程信息" + "(" + "就绪队列" + ")");
+                    else if(queue == runningTable)
+                        dispatcher.getProcessStage().setTitle("进程信息" + "(" + "正在运行" + ")");
                     dispatcher.getProcessStage().show();
                 }
                 
@@ -748,6 +766,8 @@ public class MainController {
         process.setFirstTime(true);
         process.setRemainingTime(process.getServiceTime());
         process.setRemainingTimeProperty(process.getRemainingTime());
+        process.setWaitTime(0);
+        process.setWaitTimeProperty(process.getWaitTime());
         // only when the dispatch thread is alive;
         if (dispatcher.getDispathThread().isAlive()) {
             /*
@@ -760,6 +780,7 @@ public class MainController {
             if (dispatcher.getSizeOfReadyQueue() + 1 < dispatcher.getProcessmaxnum()) {
                 dispatcher.setRequestAdd(true);
                 dispatcher.setFinishAdd(false);
+                int count = 0;
                 while (dispatcher.isRequestAdd()) {
                     try {
                         Thread.currentThread().sleep(100);
@@ -767,6 +788,9 @@ public class MainController {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
                     }
+                    count += 100;
+                    if(count >= 2000)
+                        break;
                 }
                 process.setArrivalTime(dispatcher.getTimeCounter());
                 process.setArrivalTimeProperty(process.getArrivalTime());

@@ -81,6 +81,7 @@ public class PopupController {
         }
         // random generate the priority and service time of process
         Random rand = new Random();
+        
         for (int i = 0; i < proNum; i++) {
             ProcessPCB process = new ProcessPCB();
             // initialize process
@@ -97,6 +98,8 @@ public class PopupController {
             process.setServiceTimeProperty(process.getServiceTime());
             process.setRemainingTime(process.getServiceTime());
             process.setRemainingTimeProperty(process.getRemainingTime());
+            process.setWaitTime(0);
+            process.setWaitTimeProperty(process.getWaitTime());
             /*// join in the readyQueue
             if (dispatcher.getReadyQueue().size() + dispatcher.getRunningProcess().size() < dispatcher.getProcessmaxnum()) {
                 //process.setArrivalTime((int) (dispatcher.getCurrentTime() - dispatcher.getStartTime()));
@@ -181,6 +184,7 @@ public class PopupController {
                 if (dispatcher.getSizeOfReadyQueue() + 1 < dispatcher.getProcessmaxnum()) {
                     dispatcher.setRequestAdd(true);
                     dispatcher.setFinishAdd(false);
+                    int count = 0;
                     while (dispatcher.isRequestAdd()) {
                         try {
                             Thread.currentThread().sleep(100);
@@ -188,6 +192,9 @@ public class PopupController {
                             // TODO Auto-generated catch block
                             e.printStackTrace();
                         }
+                        count += 100;
+                        if(count >= 2000)
+                            break;
                     }
                     process.setArrivalTime(dispatcher.getTimeCounter());
                     process.setArrivalTimeProperty(process.getArrivalTime());
@@ -237,6 +244,12 @@ public class PopupController {
                 } else {
                     // join int the wait queue
                     dispatcher.getWaitQueue().add(process);
+                }
+                try {
+                    Thread.currentThread().sleep(1000);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
                 }
 
             }else {

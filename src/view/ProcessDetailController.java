@@ -23,7 +23,12 @@ public class ProcessDetailController {
     private Label processRunTimeLabel;
     @FXML
     private Label processRemainTimeLabel;
-
+    @FXML
+    private Label endTime;
+    @FXML
+    private Label turnAroundTime;
+    @FXML
+    private Label normalizedTrunAroundTime;
     @FXML
     private TextField name;
     @FXML
@@ -121,4 +126,17 @@ public class ProcessDetailController {
     public void setQueue(TableView<ProcessPCB> queue) {
         this.queue = queue;
     }
+
+    public Label getEndTime() {
+        return endTime;
+    }
+
+    public Label getTurnAroundTime() {
+        return turnAroundTime;
+    }
+
+    public Label getNormalizedTrunAroundTime() {
+        return normalizedTrunAroundTime;
+    }
+    
 }

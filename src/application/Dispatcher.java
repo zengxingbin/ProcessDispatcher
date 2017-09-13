@@ -186,6 +186,8 @@ public class Dispatcher extends Application {
                     ProcessPCB pro = waitQueue.remove(0);
                     totalServiceTime += pro.getServiceTime();
                     pro.setArrivalTime(timeCounter);
+                    //System.out.println("timeCount" + timeCounter);
+                    pro.setArrivalTimeProperty(timeCounter);
                     readyQueue.add(pro);
                     synchronizeReadyQueue.add(pro);
                     
@@ -252,6 +254,9 @@ public class Dispatcher extends Application {
             processCounter = 0;
             // rmove the last completed process from runningProcess table
             runningProcess.remove(0);
+            //clear the readyqueue
+            readyQueue.clear();
+            synchronizeReadyQueue.clear();
             // reset the hasStartDispatch value when the dispatch thread finish
             // hasStartDispatch = false;
             //reset the time counter;
@@ -343,7 +348,7 @@ public class Dispatcher extends Application {
                 process.setRunTimeProperty(process.getRunTime());
                 process.setRemainingTime(process.getRemainingTime() - 1);
                 process.setRemainingTimeProperty(process.getRemainingTime());
-                System.out.println("**Currnet running process:" + process + "**");
+                System.out.println("时间片轮换" + "**Currnet running process:" + process + "**");
                 // update the runningprocess,the runningprocess list will be
                 // updated only the quote of current process is changed
                 /*runningProcess.remove(0);
@@ -471,8 +476,7 @@ public class Dispatcher extends Application {
                     if(!readyQueue.isEmpty()) {
                         //get next process to be run
                         process = readyQueue.remove(0);
-                        runningProcess.remove(0);
-                        runningProcess.add(process);
+                        
                         mainController.getRunProcessText().setText(process.getpName());
                         if (process.isFirstTime()) {
                             System.out.println(process.getpName() + "开始时间:" + timeCounter);
@@ -482,6 +486,8 @@ public class Dispatcher extends Application {
                             process.setHasRun(true);
                             
                         }
+                        runningProcess.remove(0);
+                        runningProcess.add(process);
                         
                     }else {
                         System.out.println("--All processes have been completed!--");
@@ -496,8 +502,7 @@ public class Dispatcher extends Application {
                         readyQueue.add(process);
                         //get next process to be run ,may be still the current running process
                         process = readyQueue.remove(0);
-                        runningProcess.remove(0);
-                        runningProcess.add(process);
+                        
                         mainController.getRunProcessText().setText(process.getpName());
                         if (process.isFirstTime()) {
                             //System.out.println(process.getpName() + "开始时间:" + timeCounter);
@@ -507,6 +512,8 @@ public class Dispatcher extends Application {
                             process.setHasRun(true);
                             
                         }
+                        runningProcess.remove(0);
+                        runningProcess.add(process);
                         //reset the timeslice
                         timeSlicing = 0;
                     }
@@ -566,8 +573,7 @@ public class Dispatcher extends Application {
                     process.setRunTimeProperty(process.getRunTime());
                     process.setRemainingTime(process.getRemainingTime() - 1);
                     process.setRemainingTimeProperty(process.getRemainingTime());
-                    process.setWaitTimeProperty(process.getWaitTime());
-                    System.out.println("**Currnet running process:" + process + "**");
+                    System.out.println("优先级" + "**Currnet running process:" + process + "**");
                     /*runningProcess.remove(0);
                     try {
                         process = (ProcessPCB) process.clone();
@@ -697,15 +703,17 @@ public class Dispatcher extends Application {
                             // currentTime = System.currentTimeMillis() / 1000;
                             // process.setStartTime((int) currentTime - (int)
                             // startTime);
+                           
                             mainController.getRunProcessText().setText(process.getpName());
                             if (process.isFirstTime()) {
                                 process.setStartTime(timeCounter);
                                 process.setStartTimeProperty(process.getStartTime());
                                 process.setFirstTime(false);
                                 process.setHasRun(true);
-                                runningProcess.remove(0);
-                                runningProcess.add(process);
                             }
+                            //as the running process
+                            runningProcess.remove(0);
+                            runningProcess.add(process);
                         }
                     }
                 }
@@ -716,6 +724,7 @@ public class Dispatcher extends Application {
                 
                 //process = readyQueue.remove(0);
                 process = synchronizeReadyQueue.remove(0);
+                System.out.println("优先级抢占" + process.getpName());
                 readyQueue.remove(process);
                 
                  /* startTime = System.currentTimeMillis() / 1000; currentTime =
@@ -735,7 +744,7 @@ public class Dispatcher extends Application {
                     process.setRunTimeProperty(process.getRunTime());
                     process.setRemainingTime(process.getRemainingTime() - 1);
                     process.setRemainingTimeProperty(process.getRemainingTime());
-                    System.out.println("**Currnet running process:" + process + "**");
+                    System.out.println("优先级抢占" + "**Currnet running process:" + process + "**");
                     /*// dispatch thread suspend
                     while (needWait) {
                         try {
@@ -767,8 +776,10 @@ public class Dispatcher extends Application {
                     mainController.getProgressBar().setProgress(progress);
                     mainController.getPercentage().setText("    " + String.format("%.1f", progress * 100) + "%");
                     // other process wait for the currnet process to finish
-                    /*for (ProcessPCB process : readyQueue)
-                        process.setWaitTime(process.getWaitTime() + 1);*/
+                    for (ProcessPCB process : readyQueue) {
+                        process.setWaitTime(process.getWaitTime() + 1);
+                        process.setWaitTimeProperty(process.getWaitTime());
+                    }
                     /*ObservableList<ProcessPCB> readyQueueTemp = FXCollections.observableArrayList();
                     for(ProcessPCB process :readyQueue) {
                         try {
@@ -855,6 +866,7 @@ public class Dispatcher extends Application {
                             //process = readyQueue.remove(0);
                             process = synchronizeReadyQueue.remove(0);
                             readyQueue.remove(process);
+                            
                             mainController.getRunProcessText().setText(process.getpName());
                             // currentTime = System.currentTimeMillis() / 1000;
                             if (process.isFirstTime()) {
@@ -863,6 +875,9 @@ public class Dispatcher extends Application {
                                 process.setFirstTime(false);
                                 process.setHasRun(true);
                             }
+                            //as the running process
+                            runningProcess.remove(0);
+                            runningProcess.add(process);
                         }
                     } else if(isContention){
                         // if there is process which has higher priority in
@@ -893,6 +908,9 @@ public class Dispatcher extends Application {
                                     process.setFirstTime(false);
                                     process.setHasRun(true);
                                 }
+                              //as the running process
+                                runningProcess.remove(0);
+                                runningProcess.add(process);
                             }
                         }
                     }
@@ -942,7 +960,7 @@ public class Dispatcher extends Application {
                 process.setRunTimeProperty(process.getRunTime());
                 process.setRemainingTime(process.getRemainingTime() - 1);
                 process.setRemainingTimeProperty(process.getRemainingTime());
-                System.out.println("**Currnet running process:" + process + "**");
+                System.out.println("最短进程优先" + "**Currnet running process:" + process + "**");
                 /*// dispatch thread suspend
                 while (needWait) {
                     try {
@@ -1079,6 +1097,7 @@ public class Dispatcher extends Application {
                         //process = readyQueue.remove(0);
                         process = synchronizeReadyQueue.remove(0);
                         readyQueue.remove(process);
+                        
                         // currentTime = System.currentTimeMillis() / 1000;
                         // process.setStartTime((int) currentTime - (int)
                         // startTime);
@@ -1089,6 +1108,9 @@ public class Dispatcher extends Application {
                             process.setFirstTime(false);
                             process.setHasRun(true);
                         }
+                        //as the running process
+                        runningProcess.remove(0);
+                        runningProcess.add(process);
                     }
                 } else if(isContention) {
                     /*
@@ -1110,6 +1132,7 @@ public class Dispatcher extends Application {
                             readyQueue.remove(process2);
                             synchronizeReadyQueue.remove(0);
                             process = process2;
+                            
                             mainController.getRunProcessText().setText(process.getpName());
                             if (process.isFirstTime()) {
                                 process.setStartTime(timeCounter);
@@ -1117,6 +1140,9 @@ public class Dispatcher extends Application {
                                 process.setFirstTime(false);
                                 process.setHasRun(true);
                             }
+                          //as the running process
+                            runningProcess.remove(0);
+                            runningProcess.add(process);
                         }
                     }
 
@@ -1150,7 +1176,7 @@ public class Dispatcher extends Application {
                 process.setRunTimeProperty(process.getRunTime());
                 process.setRemainingTime(process.getRemainingTime() - 1);
                 process.setRemainingTimeProperty(process.getRemainingTime());
-                System.out.println("**Currnet running process:" + process + "**");
+                System.out.println("先来先服务" + "**Currnet running process:" + process + "**");
                 /*// dispatch thread suspend
                 while (needWait) {
                     try {
@@ -1284,6 +1310,7 @@ public class Dispatcher extends Application {
                         // currentTime = System.currentTimeMillis() / 1000;
                         // process.setStartTime((int) currentTime - (int)
                         // startTime);
+                        
                         mainController.getRunProcessText().setText(process.getpName());
                         if (process.isFirstTime()) {
                             process.setStartTime(timeCounter);
@@ -1291,6 +1318,9 @@ public class Dispatcher extends Application {
                             process.setFirstTime(false);
                             process.setHasRun(true);
                         }
+                      //as the running proccess 
+                        runningProcess.remove(0);
+                        runningProcess.add(process);
                     }
                 }
             }
@@ -1328,7 +1358,7 @@ public class Dispatcher extends Application {
                 process.setRunTimeProperty(process.getRunTime());
                 process.setRemainingTime(process.getRemainingTime() - 1);
                 process.setRemainingTimeProperty(process.getRemainingTime());
-                System.out.println("**Currnet running process:" + process + "**");
+                System.out.println("最高响应比" + "**Currnet running process:" + process + "**");
                 /*// dispatch thread suspend
                 while (needWait) {
                     try {
@@ -1468,6 +1498,9 @@ public class Dispatcher extends Application {
                             process.setFirstTime(false);
                             process.setHasRun(true);
                         }
+                        //as the running proccess 
+                        runningProcess.remove(0);
+                        runningProcess.add(process);
                     }
                 } 
             }
@@ -1509,7 +1542,7 @@ public class Dispatcher extends Application {
                 process.setRunTimeProperty(process.getRunTime());
                 process.setRemainingTime(process.getRemainingTime() - 1);
                 process.setRemainingTimeProperty(process.getRemainingTime());
-                System.out.println("**Currnet running process:" + process + "**");
+                System.out.println("反馈" + "**Currnet running process:" + process + "**");
                 // update the runningprocess,the runningprocess list will be
                 // updated only the quote of current process is changed
                 /*runningProcess.remove(0);
@@ -1626,6 +1659,9 @@ public class Dispatcher extends Application {
                             process.setHasRun(true);
                             
                         }
+                        //as the running proccess 
+                        runningProcess.remove(0);
+                        runningProcess.add(process);
                         
                     }else {
                         System.out.println("--All processes have been completed!--");
@@ -1657,6 +1693,9 @@ public class Dispatcher extends Application {
                             process.setHasRun(true);
                             
                         }
+                        //as the running proccess 
+                        runningProcess.remove(0);
+                        runningProcess.add(process);
                         //reset the timeslice
                         timeSlicing = 0;
                     }
