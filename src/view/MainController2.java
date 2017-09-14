@@ -40,7 +40,7 @@ import util.ProcessComparator;
  *
  */
 
-public class MainController implements Controller{
+public class MainController2 implements Controller{
     private Dispatcher dispatcher;
     @FXML
     private TextField userName;
@@ -167,6 +167,10 @@ public class MainController implements Controller{
     @FXML
     private TextField newProSeviceTime;
     @FXML
+    private TextField newProArrivalTime;
+    @FXML
+    private Label arrivalTimeTip;
+    @FXML
     private Label serviceTimeTip;
     @FXML
     private TextField newProPriority;
@@ -203,6 +207,8 @@ public class MainController implements Controller{
     private int proPriority;
     //service time of new process
     private int proServiceTime;
+    //arrival time of new process
+    private int proArrivalTime;
     @FXML
     private TextField timeSlicField;
     
@@ -367,13 +373,11 @@ public class MainController implements Controller{
                     controller.getName().setDisable(true);
                     controller.getServiceTime().setDisable(true);
                     controller.getPriority().setDisable(true);
-                    controller.getDeleteButton().setDisable(true);
                 }
                 else {
                     controller.getName().setDisable(false);
                     controller.getServiceTime().setDisable(false);
                     controller.getPriority().setDisable(false);
-                    controller.getDeleteButton().setDisable(false);
                 }
                 if(!queue.getItems().isEmpty() && queue.getSelectionModel().getSelectedItem() != null) {
                     if(queue == readyQueue)
@@ -727,7 +731,7 @@ public class MainController implements Controller{
     @FXML
     public void addnewProcess() {
         // check your input
-        boolean addSuccess = false;
+        boolean addSuccess = true;
         proName = newProName.getText();
         if (proName == null)
             proNameTip.setVisible(true);
@@ -737,12 +741,18 @@ public class MainController implements Controller{
             proNameTip.setVisible(true);
             addSuccess = false;
         }
-        
+        try {
+            proArrivalTime = Integer.parseInt(newProArrivalTime.getText().trim());
+        }catch(NumberFormatException e) {
+            arrivalTimeTip.setVisible(true);
+            addSuccess = false;
+        }
         try {
             proServiceTime = Integer.parseInt(newProSeviceTime.getText().trim());
         } catch (NumberFormatException e) {
             // e.printStackTrace();
             serviceTimeTip.setVisible(true);
+            addSuccess = false;
         }
         try {
             
@@ -753,8 +763,31 @@ public class MainController implements Controller{
         }
         if (!addSuccess)
             return;
+        //create a new process,and add to the ready queue
+        ProcessPCB process = new ProcessPCB();
+        process.setpName(proName);
+        process.setpNameProperty(process.getpName());
+        process.setPriority(proPriority);
+        process.setPriorityProperty(process.getPriority());
+        process.setArrivalTime(proArrivalTime);
+        //add the arrival time to the timelist
+        dispatcher.getTimeList().add(proArrivalTime);
+        process.setArrivalTimeProperty(process.getArrivalTime());
+        process.setServiceTime(proServiceTime);
+        process.setServiceTimeProperty(process.getServiceTime());
+        process.setPid(dispatcher.getProcessCounter());
+        process.setPidProperty(process.getPid());
+        dispatcher.setProcessCounter(dispatcher.getProcessCounter() + 1);
+        process.setStatus(0);
+        process.setFirstTime(true);
+        process.setRemainingTime(process.getServiceTime());
+        process.setRemainingTimeProperty(process.getRemainingTime());
+        process.setWaitTime(0);
+        process.setWaitTimeProperty(process.getWaitTime());
+        //add to the reay queue
+        dispatcher.getReadyQueue().add(process);
         //sure to add a new process
-        addSignal = true;
+        //addSignal = true;
         
         // clear the text field
         /*

@@ -8,7 +8,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.layout.AnchorPane?>
 
-<AnchorPane prefHeight="650.0" prefWidth="968.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="view.MainController">
+<AnchorPane prefHeight="650.0" prefWidth="968.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="view.MainController2">
    <children>
       <GridPane prefHeight="30.0" prefWidth="951.0">
         <columnConstraints>
@@ -33,7 +33,6 @@
             <ComboBox fx:id="isContention" disable="true" prefHeight="23.0" prefWidth="93.0" promptText="是否抢占" GridPane.columnIndex="4" />
             <Button fx:id="startDispatchButton" mnemonicParsing="false" onAction="#startDispatch" text="开始调度" GridPane.columnIndex="6" />
             <Button fx:id="resetButton" mnemonicParsing="false" onAction="#reset" text="重置" GridPane.columnIndex="7" />
-            <Button fx:id="randomGenButton" mnemonicParsing="false" onAction="#randomGenPro" prefHeight="23.0" prefWidth="96.0" text="随机生成进程" GridPane.columnIndex="8" />
             <Group GridPane.columnIndex="5">
                <children>
                   <Text layoutX="825.0" layoutY="561.0" strokeType="OUTSIDE" strokeWidth="0.0" text="时间片：" />
@@ -43,8 +42,8 @@
          </children>
       </GridPane>
       <ListView layoutY="49.0" prefHeight="567.0" prefWidth="801.0" />
-      <Text layoutX="3.0" layoutY="61.0" strokeType="OUTSIDE" strokeWidth="0.0" text="就绪队列：" wrappingWidth="64.0" />
-      <TableView fx:id="readyQueue" layoutX="3.0" layoutY="64.0" prefHeight="140.0" prefWidth="782.0">
+      <Text layoutX="5.0" layoutY="374.0" strokeType="OUTSIDE" strokeWidth="0.0" text="就绪队列：" wrappingWidth="64.0" />
+      <TableView fx:id="readyQueue" layoutX="3.0" layoutY="381.0" prefHeight="140.0" prefWidth="782.0">
         <columns>
           <TableColumn fx:id="pId" prefWidth="75.0" text="进程ID" />
           <TableColumn fx:id="pName" prefWidth="75.0" text="进程名" />
@@ -63,28 +62,8 @@
             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
          </columnResizePolicy>
       </TableView>
-      <Text layoutX="2.0" layoutY="226.0" strokeType="OUTSIDE" strokeWidth="0.0" text="等待队列：" />
-      <Text layoutX="5.0" layoutY="389.0" strokeType="OUTSIDE" strokeWidth="0.0" text="完成队列：" />
-      <TableView fx:id="waitQueue" layoutX="3.0" layoutY="229.0" prefHeight="140.0" prefWidth="782.0">
-         <columnResizePolicy>
-            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
-         </columnResizePolicy>
-         <columns>
-            <TableColumn fx:id="pId1" prefWidth="75.0" text="进程ID" />
-            <TableColumn fx:id="pName1" prefWidth="75.0" text="进程名" />
-            <TableColumn fx:id="priority1" prefWidth="75.0" text="优先级" />
-            <TableColumn fx:id="arrivalTime1" prefWidth="75.0" text="到达时间" />
-            <TableColumn fx:id="serviceTime1" prefWidth="75.0" text="服务时间" />
-            <TableColumn fx:id="startTime1" prefWidth="75.0" text="开始时间" />
-            <TableColumn fx:id="waitTime1" prefWidth="75.0" text="等待时间" />
-            <TableColumn fx:id="runTime1" prefWidth="75.0" text="已运行" />
-            <TableColumn fx:id="remainingTime1" prefWidth="75.0" text="剩余时间" />
-            <TableColumn fx:id="endTime1" prefWidth="75.0" text="结束时间" />
-            <TableColumn fx:id="turnaroundTime1" prefWidth="75.0" text="周转时间" />
-            <TableColumn fx:id="normalizedTurnaroundTime1" prefWidth="75.0" text="Ts/Tr" />
-         </columns>
-      </TableView>
-      <TableView fx:id="finishQueue" layoutX="3.0" layoutY="392.0" prefHeight="140.0" prefWidth="782.0">
+      <Text layoutX="5.0" layoutY="219.0" strokeType="OUTSIDE" strokeWidth="0.0" text="完成队列：" />
+      <TableView fx:id="finishQueue" layoutX="3.0" layoutY="222.0" prefHeight="140.0" prefWidth="782.0">
          <columnResizePolicy>
             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
          </columnResizePolicy>
@@ -103,8 +82,8 @@
             <TableColumn fx:id="normalizedTurnaroundTime2" prefWidth="75.0" text="Ts/Tr" />
          </columns>
       </TableView>
-      <Text layoutX="2.0" layoutY="554.0" strokeType="OUTSIDE" strokeWidth="0.0" text="正在运行：" />
-      <TableView fx:id="runningTable" layoutX="3.0" layoutY="557.0" prefHeight="56.0" prefWidth="782.0">
+      <Text layoutX="5.0" layoutY="543.0" strokeType="OUTSIDE" strokeWidth="0.0" text="正在运行：" />
+      <TableView fx:id="runningTable" layoutX="3.0" layoutY="546.0" prefHeight="56.0" prefWidth="782.0">
          <columnResizePolicy>
             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
          </columnResizePolicy>
@@ -127,31 +106,38 @@
          <content>
             <GridPane prefHeight="213.0" prefWidth="92.0">
                <children>
-                  <TextField fx:id="newProName" GridPane.rowIndex="1" />
-                  <TextField fx:id="newProSeviceTime" promptText="请输入数字" GridPane.rowIndex="3" />
-                  <TextField fx:id="newProPriority" promptText="请输入数字" GridPane.rowIndex="5" />
-                  <HBox GridPane.rowIndex="7">
+                  <TextField fx:id="newProArrivalTime" GridPane.rowIndex="3" />
+                  <TextField fx:id="newProSeviceTime" promptText="请输入数字" GridPane.rowIndex="5" />
+                  <TextField fx:id="newProPriority" promptText="请输入数字" GridPane.rowIndex="7" />
+                  <HBox GridPane.rowIndex="9">
                      <children>
                         <Button fx:id="addButton" layoutX="825.0" layoutY="531.0" mnemonicParsing="false" onAction="#addnewProcess" text="添加进程" />
                         <Button layoutX="892.0" layoutY="531.0" mnemonicParsing="false" onAction="#reset2" text="重置" />
                      </children>
                   </HBox>
-                  <HBox GridPane.rowIndex="4">
+                  <HBox GridPane.rowIndex="6">
                      <children>
                         <Text layoutX="839.0" layoutY="537.0" strokeType="OUTSIDE" strokeWidth="0.0" text="优先级：" />
                         <Label fx:id="priorityTip" layoutX="887.0" layoutY="525.0" text="请输入数字" textFill="#f80b0b" visible="false" />
                      </children>
                   </HBox>
-                  <HBox GridPane.rowIndex="2">
+                  <HBox GridPane.rowIndex="4">
                      <children>
                         <Text layoutX="832.0" layoutY="537.0" strokeType="OUTSIDE" strokeWidth="0.0" text="服务时间：" />
                         <Label fx:id="serviceTimeTip" layoutX="892.0" layoutY="525.0" text="请输入数字" textFill="#ee0303" visible="false" />
                      </children>
                   </HBox>
+                  <HBox GridPane.rowIndex="2">
+                     <children>
+                        <Text layoutX="839.0" layoutY="546.0" strokeType="OUTSIDE" strokeWidth="0.0" text="到达时间：" />
+                        <Label fx:id="arrivalTimeTip" layoutX="887.0" layoutY="534.0" text="请输入到达时间" textFill="#f50707" visible="false" />
+                     </children>
+                  </HBox>
+                  <TextField fx:id="newProName" GridPane.rowIndex="1" />
                   <HBox>
                      <children>
-                        <Text layoutX="839.0" layoutY="546.0" strokeType="OUTSIDE" strokeWidth="0.0" text="进程名：" />
-                        <Label fx:id="proNameTip" layoutX="887.0" layoutY="534.0" text="请输入进程名" textFill="#f50707" visible="false" />
+                        <Text layoutX="819.0" layoutY="522.0" strokeType="OUTSIDE" strokeWidth="0.0" text="进程名：" />
+                        <Label fx:id="proNameTip" layoutX="867.0" layoutY="510.0" text="请输入进程名" visible="false" />
                      </children>
                   </HBox>
                </children>
@@ -168,19 +154,40 @@
                   <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                   <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                   <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                </rowConstraints>
             </GridPane>
          </content>
       </TitledPane>
       <Button fx:id="pauseAndContinueButton" layoutX="805.0" layoutY="451.0" mnemonicParsing="false" onAction="#suspendAndContinue" text="暂停" />
       <Button fx:id="exitButoon" layoutX="902.0" layoutY="451.0" mnemonicParsing="false" onAction="#exit" text="退出" />
-      <HBox fx:id="progressHbox" layoutX="67.0" layoutY="540.0" prefHeight="18.0" prefWidth="717.0" visible="false">
+      <HBox fx:id="progressHbox" layoutX="65.0" layoutY="530.0" prefHeight="18.0" prefWidth="717.0">
          <children>
             <Text fx:id="runProcessText" fill="#097c18" layoutX="813.0" layoutY="546.0" strokeType="OUTSIDE" strokeWidth="0.0" wrappingWidth="64.240234375" />
-            <ProgressBar fx:id="progressBar" layoutX="842.0" layoutY="533.0" prefHeight="18.0" prefWidth="586.0" progress="0.0" />
+            <ProgressBar fx:id="progressBar" layoutX="842.0" layoutY="533.0" prefHeight="18.0" prefWidth="586.0" progress="0.0" visible="false" />
             <Text fx:id="percentage" fill="#1d64db" strokeType="OUTSIDE" strokeWidth="0.0" text="    0%" wrappingWidth="65.240234375" />
          </children>
       </HBox>
-      <HBox layoutX="827.0" layoutY="521.0" />
+      <TableView fx:id="finishQueue1" layoutX="3.0" layoutY="67.0" prefHeight="140.0" prefWidth="782.0">
+         <columnResizePolicy>
+            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+         </columnResizePolicy>
+         <columns>
+            <TableColumn fx:id="pId21" prefWidth="75.0" text="进程ID" />
+            <TableColumn fx:id="pName21" prefWidth="75.0" text="进程名" />
+            <TableColumn fx:id="priority21" prefWidth="75.0" text="优先级" />
+            <TableColumn fx:id="arrivalTime21" prefWidth="75.0" text="到达时间" />
+            <TableColumn fx:id="serviceTime21" prefWidth="75.0" text="服务时间" />
+            <TableColumn fx:id="startTime21" prefWidth="75.0" text="开始时间" />
+            <TableColumn fx:id="waitTime21" prefWidth="75.0" text="等待时间" />
+            <TableColumn fx:id="runTime21" prefWidth="75.0" text="已运行" />
+            <TableColumn fx:id="remainingTime21" prefWidth="75.0" text="剩余时间" />
+            <TableColumn fx:id="endTime21" prefWidth="75.0" text="结束时间" />
+            <TableColumn fx:id="turnaroundTime21" prefWidth="75.0" text="周转时间" />
+            <TableColumn fx:id="normalizedTurnaroundTime21" prefWidth="75.0" text="Ts/Tr" />
+         </columns>
+      </TableView>
+      <Text layoutX="2.0" layoutY="61.0" strokeType="OUTSIDE" strokeWidth="0.0" text="模拟队列：" />
    </children>
 </AnchorPane>

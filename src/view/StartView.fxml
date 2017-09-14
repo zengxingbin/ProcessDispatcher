@@ -18,7 +18,7 @@
             <Font size="13.0" />
          </font>
       </Button>
-      <Button layoutX="197.0" layoutY="97.0" mnemonicParsing="false" onAction="#simulateDispatch" prefHeight="30.0" prefWidth="76.0" text="模拟调度" textFill="#ddad11">
+      <Button disable="true" layoutX="197.0" layoutY="97.0" mnemonicParsing="false" onAction="#simulateDispatch" prefHeight="30.0" prefWidth="76.0" text="模拟调度" textFill="#ddad11">
          <font>
             <Font size="13.0" />
          </font>

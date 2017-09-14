@@ -4,6 +4,7 @@ import javax.swing.JOptionPane;
 
 import application.Dispatcher;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
@@ -37,6 +38,8 @@ public class ProcessDetailController {
     private TextField serviceTime;
     private ProcessPCB process;
     private TableView<ProcessPCB> queue;
+    @FXML
+    private Button deleteButton;
     @FXML
     public void confirmButton() {
         String errorMessage = "";
@@ -77,9 +80,14 @@ public class ProcessDetailController {
     public void returnButton() {
         dispatcher.getProcessStage().close();
         queue.getSelectionModel().clearSelection();
-        return;
     }
-
+    
+    public void deleteButton() {
+        queue.getItems().remove(process);
+        dispatcher.getProcessStage().close();
+        queue.getSelectionModel().clearSelection();
+    }
+    @FXML
     public void setDispatcher(Dispatcher dispatcher) {
         this.dispatcher = dispatcher;
     }
@@ -141,6 +149,10 @@ public class ProcessDetailController {
 
     public TableView<ProcessPCB> getQueue() {
         return queue;
+    }
+
+    public Button getDeleteButton() {
+        return deleteButton;
     }
     
 }

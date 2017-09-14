@@ -1,15 +1,9 @@
 package application;
 
 import java.io.IOException;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.Random;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 import javax.swing.JOptionPane;
-import javax.swing.plaf.synth.SynthSpinnerUI;
-
-import com.sun.javafx.binding.StringFormatter;
-
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -20,16 +14,15 @@ import javafx.stage.Stage;
 import model.ProcessPCB;
 import util.ProcessComparator;
 import util.Queue;
+import view.Controller;
 import view.MainController;
+import view.MainController2;
 import view.PopupController;
 import view.ProcessDetailController;
 import view.StartController;
 import view.WarningController;
-import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
 import javafx.scene.image.Image;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 /**
  * 
@@ -39,7 +32,10 @@ import javafx.scene.layout.Pane;
  *
  */
 public class Dispatcher extends Application {
-    private GridPane gridPane = new GridPane();
+    //the choice of scheduling 
+    private int schedulingChoice;
+    //time list to create a new process when time coming
+    private ArrayList<Integer> timeList = new ArrayList<>();
     private static int timeCounter;
     private static long startTime;
     private static long currentTime;
@@ -53,9 +49,11 @@ public class Dispatcher extends Application {
     private Stage popupStage;
     private Stage warnStage;
     private Stage processStage;
+    private Stage mainStage2;
     private ProcessDetailController processController;
     private PopupController popupController;
     private MainController mainController;
+    private MainController2 mainController2;
     private WarningController warnController;
     // ready queue
     private ObservableList<ProcessPCB> readyQueue = FXCollections.observableArrayList();
@@ -2076,6 +2074,25 @@ public class Dispatcher extends Application {
     //this thread is responsible for adding the process in waitqueue to readyQueue dynamically
     private Thread addProcessThread = new Thread(new AddProcessRun());
     public Dispatcher() {
+       /* //create main2 stage
+        mainStage2 = new Stage();
+        mainStage2.setTitle("进程调度器");
+        mainStage2.getIcons().add(new Image("/images/scheduler.png"));
+        mainStage2.setResizable(false);
+        FXMLLoader mainLoader = new FXMLLoader();
+        mainLoader.setLocation(getClass().getResource("../view/MainView2.fxml"));
+        Pane mainPane2 = null;
+        try {
+            mainPane2 = mainLoader.load();
+        }catch(IOException e) {
+            System.out.println("文件未发现");
+        }
+        Scene mainScene2 = new Scene(mainPane2);
+        //get the mainController2
+        mainController2 = mainLoader.getController();
+        mainController2.setDispatcher(this);
+        mainController2.setInitialData();
+        mainStage2.setScene(mainScene2);*/
         //create start stage
         startStage = new Stage();
         startStage.setTitle("启动程序");
@@ -2173,6 +2190,7 @@ public class Dispatcher extends Application {
         processStage.setScene(processScene);
         processController = loader3.getController();
         processController.setDispatcher(this);
+        
     }
 
     @Override
@@ -2447,6 +2465,26 @@ public class Dispatcher extends Application {
 
     public Thread getAddAProcessThread() {
         return addAProcessThread;
+    }
+
+    public Stage getMainStage2() {
+        return mainStage2;
+    }
+
+    public MainController2 getMainController2() {
+        return mainController2;
+    }
+
+    public int getSchedulingChoice() {
+        return schedulingChoice;
+    }
+
+    public void setSchedulingChoice(int schedulingChoice) {
+        this.schedulingChoice = schedulingChoice;
+    }
+
+    public ArrayList<Integer> getTimeList() {
+        return timeList;
     }
     
 }

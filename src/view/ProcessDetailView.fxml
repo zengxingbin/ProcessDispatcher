@@ -55,5 +55,6 @@
       </GridPane>
       <Button layoutX="74.0" layoutY="292.0" mnemonicParsing="false" onAction="#confirmButton" text="确认" />
       <Button layoutX="192.0" layoutY="292.0" mnemonicParsing="false" onAction="#returnButton" text="返回" />
+      <Button fx:id="deleteButton" layoutX="133.0" layoutY="292.0" mnemonicParsing="false" onAction="#deleteButton" text="删除" />
    </children>
 </AnchorPane>
