@@ -138,5 +138,9 @@ public class ProcessDetailController {
     public Label getNormalizedTrunAroundTime() {
         return normalizedTrunAroundTime;
     }
+
+    public TableView<ProcessPCB> getQueue() {
+        return queue;
+    }
     
 }
