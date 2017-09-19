@@ -83,6 +83,8 @@ public class ProcessDetailController {
     }
     
     public void deleteButton() {
+        //decrease the total service time 
+        dispatcher.setTotalServiceTime(dispatcher.getTotalServiceTime() - process.getServiceTime());
         queue.getItems().remove(process);
         dispatcher.getProcessStage().close();
         queue.getSelectionModel().clearSelection();
